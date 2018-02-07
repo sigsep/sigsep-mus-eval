@@ -1,0 +1,47 @@
+{
+  "type": "object",
+  "properties": {
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "time": {
+                  "type": "number"
+                },
+                "duration": {
+                  "type": "number"
+                },
+                "metrics": {
+                  "type": "object",
+                  "properties": {
+                    "SDR": {
+                      "type": "number"
+                    },
+                    "SIR": {
+                      "type": "number"
+                    },
+                    "SAR": {
+                      "type": "number"
+                    },
+                    "ISR": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
