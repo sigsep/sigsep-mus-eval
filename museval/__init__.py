@@ -58,8 +58,7 @@ class TrackData(object):
 def eval_estimates_dir(
     dataset,
     estimates_dir,
-    output_dir=None,
-    verbose=False
+    output_path=None
 ):
     def load_estimates(track):
         # load estimates from disk instead of processing
@@ -85,10 +84,10 @@ def eval_estimates_dir(
             except RuntimeError:
                 pass
 
-        eval_user_estimates(
+        eval_mus_track(
             track,
             user_results,
-            output_dir=output_dir
+            output_path=output_path
         )
 
         return None
@@ -96,13 +95,27 @@ def eval_estimates_dir(
     dataset.run(load_estimates, estimates_dir=None, subsets="Test")
 
 
-def eval_user_estimates(
+def eval_mus_track(
     track,
     user_estimates,
-    output_dir=None,
-    verbose=False,
+    output_path=None,
     mode='v4',
 ):
+    """Compute all bss_eval metrics for the musdb track and estimated signals,
+    given by a `user_estimates` dict.
+
+    Parameters
+    ----------
+    track : Track
+        musdb track object loaded using musdb
+    estimated_sources : Dict
+        dictionary, containing the user estimates.
+    output_path : str
+        path to output directory used to save evaluation results. Defaults to
+        `None`, meaning no evaluation files will be saved.
+    mode : str
+        bsseval compatibility mode."""
+
     audio_estimates = []
     audio_reference = []
 
@@ -115,7 +128,7 @@ def eval_user_estimates(
     for key, target in list(track.targets.items()):
         try:
             # try to fetch the audio from the user_results of a given key
-            estimate = user_estimates[key]
+            user_estimates[key]
         except KeyError:
             # ignore wrong key and continue
             continue
@@ -196,12 +209,12 @@ def eval_user_estimates(
                 values=values
             )
 
-    if output_dir:
+    if output_path:
         try:
             # schema.validate(data.scores)
 
             subset_path = op.join(
-                output_dir,
+                output_path,
                 track.subset
             )
 
@@ -215,8 +228,6 @@ def eval_user_estimates(
 
         except (ValueError, IOError):
             pass
-
-    return data.scores
 
 
 def _eval_targets(

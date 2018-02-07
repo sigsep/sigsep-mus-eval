@@ -10,7 +10,7 @@ dsd = dsdtools.DB()
 
 
 user_estimates_dir = ...
-output_dir = ...
+output_path = ...
 
 
 def load_estimates(track):
@@ -36,10 +36,10 @@ def load_estimates(track):
         except RuntimeError:
             pass
 
-    museval.eval_user_estimates(
+    museval.eval_mus_track(
         track,
         user_results,
-        output_dir=output_dir,
+        output_path=output_path,
         mode='v3'
     )
 

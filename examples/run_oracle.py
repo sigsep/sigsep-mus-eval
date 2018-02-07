@@ -13,8 +13,8 @@ def my_function(track):
         'accompaniment': track.audio
     }
 
-    museval.eval_user_estimates(
-        track, estimates, output_dir="ORL1_2018_1", mode='v4'
+    museval.eval_mus_track(
+        track, estimates, output_path="ORL1_2018_1", mode='v4'
     )
 
     return estimates

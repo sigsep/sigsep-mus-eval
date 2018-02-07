@@ -9,5 +9,5 @@ mus = musdb.DB("data/MUS-STEMS-SAMPLE")
 museval.eval_estimates_dir(
     dataset=mus,  # instance of musdb
     estimates_dir='./DUR/',  # path to estiamte folder
-    output_dir='DURv4',  # set a folder to write eval json files
+    output_path='DURv4',  # set a folder to write eval json files
 )
