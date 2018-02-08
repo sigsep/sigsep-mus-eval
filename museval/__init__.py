@@ -51,8 +51,10 @@ class TrackData(object):
 
     def _q(self, number, precision='.00001'):
         """quantiztion of values"""
-
-        return D(D(number).quantize(D(precision)))
+        if np.isinf(number):
+            return np.nan
+        else:
+            return D(D(number).quantize(D(precision)))
 
 
 def eval_estimates_dir(
@@ -114,7 +116,7 @@ def eval_mus_track(
         path to output directory used to save evaluation results. Defaults to
         `None`, meaning no evaluation files will be saved.
     mode : str
-        bsseval compatibility mode."""
+        bsseval version number. Defaults to 'v4'."""
 
     audio_estimates = []
     audio_reference = []
@@ -145,7 +147,8 @@ def eval_mus_track(
     # check if vocals and accompaniment is among the targets
     has_acc = all(x in eval_targets for x in ['vocals', 'accompaniment'])
     if has_acc:
-        # remove accompaniment from list of targets
+        # remove accompaniment from list of targets, because
+        # the voc/acc scenario will be evaluated separately
         eval_targets.remove('accompaniment')
 
     if len(eval_targets) >= 2:
@@ -154,7 +157,7 @@ def eval_mus_track(
             audio_estimates.append(user_estimates[target])
             audio_reference.append(track.targets[target].audio)
 
-        SDR, ISR, SIR, SAR = _eval_targets(
+        SDR, ISR, SIR, SAR = safe_eval(
             audio_reference,
             audio_estimates,
             win=window, hop=hop, mode=mode
@@ -189,7 +192,7 @@ def eval_mus_track(
             audio_estimates.append(user_estimates[target])
             audio_reference.append(track.targets[target].audio)
 
-        SDR, ISR, SIR, SAR = _eval_targets(
+        SDR, ISR, SIR, SAR = safe_eval(
             audio_reference,
             audio_estimates,
             win=window, hop=hop, mode=mode
@@ -230,7 +233,7 @@ def eval_mus_track(
             pass
 
 
-def _eval_targets(
+def safe_eval(
     audio_reference,
     audio_estimates,
     win, hop, mode
@@ -254,14 +257,14 @@ def _eval_targets(
                 mode='constant'
             )
 
-    SDR, ISR, SIR, SAR = evaluate(
+    SDR, ISR, SIR, SAR = _evaluate(
         audio_estimates, audio_reference, win, hop, mode
     )
 
     return SDR, ISR, SIR, SAR
 
 
-def evaluate(
+def _evaluate(
     estimates,
     references,
     window=1*44100,
