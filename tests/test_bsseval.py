@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import museval.metrics as metrics
-import warnings
 
 
 @pytest.fixture(params=[2, 3])
@@ -24,7 +23,7 @@ def nb_channels(request):
     return request.param
 
 
-@pytest.fixture(params=[0.5, 1])
+@pytest.fixture(params=[1])
 def nb_samples(request, rate):
     return int(request.param * rate)
 
@@ -92,13 +91,12 @@ def test_silent_input(
 
 
 # @pytest.mark.parametrize(
-#     "method",
+#     "nb_hop",
 #     [
-#         'mir_eval',
-#         pytest.mark.xfail('not_a_function', raises=ValueError)
+#         100,
+#         pytest.mark.xfail(-1, raises=ValueError)
 #     ]
 # )
-
 def test_metric(
     references, estimates, is_framewise, is_sources, nb_win, nb_hop
 ):
