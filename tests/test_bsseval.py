@@ -1,43 +1,111 @@
 import numpy as np
 import pytest
+import museval.metrics as metrics
+import warnings
 
 
-# def __unit_test_empty_input(metric):
-#     if (metric == mir_eval.separation.bss_eval_sources or
-#             metric == mir_eval.separation.bss_eval_images):
-#         args = [np.array([]), np.array([])]
-#     elif (metric == mir_eval.separation.bss_eval_sources_framewise or
-#             metric == mir_eval.separation.bss_eval_images_framewise):
-#         args = [np.array([]), np.array([]), 40, 20]
-#     with warnings.catch_warnings(record=True) as w:
-#         warnings.simplefilter('always')
-#         # First, test for a warning on empty audio data
-#         metric(*args)
-#         assert len(w) == 2
-#         assert issubclass(w[-1].category, UserWarning)
-#         # And that the metric returns empty arrays
-#         assert np.allclose(metric(*args), np.array([]))
-#
-#
-#
-# def test_separation_functions():
-#     assert len(ref_files) == len(est_files) == len(sco_files) > 0
-#
-#     # Unit tests
-#
-#     for metric in [mir_eval.separation.bss_eval_sources,
-#                    mir_eval.separation.bss_eval_sources_framewise,
-#                    mir_eval.separation.bss_eval_images,
-#                    mir_eval.separation.bss_eval_images_framewise]:
-#         yield (__unit_test_empty_input, metric)
-#         yield (__unit_test_silent_input, metric)
-#         yield (__unit_test_incompatible_shapes, metric)
-#         yield (__unit_test_too_many_sources, metric)
-#         yield (__unit_test_too_many_dimensions, metric)
-#     for metric in [mir_eval.separation.bss_eval_sources,
-#                    mir_eval.separation.bss_eval_images]:
-#         yield (__unit_test_default_permutation, metric)
-#     for metric in [mir_eval.separation.bss_eval_sources_framewise,
-#                    mir_eval.separation.bss_eval_images_framewise]:
-#         yield (__unit_test_framewise_small_window, metric)
-#         yield (__unit_test_partial_silence, metric)
+@pytest.fixture(params=[2, 3])
+def nb_sources(request):
+    return request.param
+
+
+@pytest.fixture(params=[2000, 1000])
+def nb_win(request):
+    return request.param
+
+
+@pytest.fixture(params=[1000])
+def nb_hop(request):
+    return request.param
+
+
+@pytest.fixture(params=[1, 2])
+def nb_channels(request):
+    return request.param
+
+
+@pytest.fixture(params=[0.5, 1])
+def nb_samples(request, rate):
+    return int(request.param * rate)
+
+
+@pytest.fixture(params=[2000])
+def rate(request):
+    return request.param
+
+
+@pytest.fixture(params=[True, False])
+def is_sources(request):
+    return request.param
+
+
+@pytest.fixture
+def references(request, nb_sources, nb_samples, nb_channels, is_sources):
+    if is_sources:
+        return np.random.random((nb_sources, nb_samples))
+    else:
+        return np.random.random((nb_sources, nb_samples, nb_channels))
+
+
+@pytest.fixture
+def estimates(request, nb_sources, nb_samples, nb_channels, is_sources):
+    if is_sources:
+        return np.random.random((nb_sources, nb_samples))
+    else:
+        return np.random.random((nb_sources, nb_samples, nb_channels))
+
+
+@pytest.fixture(params=[True, False])
+def is_framewise(request):
+    return request.param
+
+
+def test_empty_input(is_framewise, is_sources, nb_win, nb_hop):
+    inputs = [np.array([]), np.array([])]
+
+    with pytest.warns(UserWarning):
+        output = metrics.bss_eval(
+            *inputs,
+            framewise_filters=is_framewise,
+            bsseval_sources_version=is_sources,
+            window=nb_win,
+            hop=nb_hop
+        )
+
+        assert np.allclose(output, np.array([]))
+
+
+def test_silent_input(
+    references, estimates, is_framewise, is_sources, nb_win, nb_hop
+):
+    estimates = np.zeros(references.shape)
+
+    with pytest.raises(ValueError):
+        metrics.bss_eval(
+            references,
+            estimates,
+            framewise_filters=is_framewise,
+            bsseval_sources_version=is_sources,
+            window=nb_win,
+            hop=nb_hop
+        )
+
+
+# @pytest.mark.parametrize(
+#     "method",
+#     [
+#         'mir_eval',
+#         pytest.mark.xfail('not_a_function', raises=ValueError)
+#     ]
+# )
+
+def test_metric(
+    references, estimates, is_framewise, is_sources, nb_win, nb_hop
+):
+    metrics.bss_eval(
+        references, estimates,
+        framewise_filters=is_framewise,
+        bsseval_sources_version=is_sources,
+        window=nb_win,
+        hop=nb_hop
+    )

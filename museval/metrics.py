@@ -694,7 +694,7 @@ def evaluate(reference_sources, estimated_sources, **kwargs):
         Dictionary of scores, where the key is the metric name (str) and
         the value is the (float) score achieved."""
 
-    # Compute all the metrics
+    # Compute the metrics
     scores = collections.OrderedDict()
 
     sdr, isr, sir, sar, perm = util.filter_kwargs(
@@ -703,46 +703,10 @@ def evaluate(reference_sources, estimated_sources, **kwargs):
         estimated_sources,
         **kwargs
     )
-    scores['Images - Source to Distortion'] = sdr.tolist()
-    scores['Images - Image to Spatial'] = isr.tolist()
-    scores['Images - Source to Interference'] = sir.tolist()
-    scores['Images - Source to Artifact'] = sar.tolist()
-    scores['Images - Source permutation'] = perm.tolist()
-
-    sdr, isr, sir, sar, perm = util.filter_kwargs(
-        bss_eval_images_framewise,
-        reference_sources,
-        estimated_sources,
-        **kwargs
-    )
-    scores['Images Frames - Source to Distortion'] = sdr.tolist()
-    scores['Images Frames - Image to Spatial'] = isr.tolist()
-    scores['Images Frames - Source to Interference'] = sir.tolist()
-    scores['Images Frames - Source to Artifact'] = sar.tolist()
-    scores['Images Frames - Source permutation'] = perm.tolist()
-
-    # Verify we can compute sources on this input
-    if reference_sources.ndim < 3 and estimated_sources.ndim < 3:
-        sdr, sir, sar, perm = util.filter_kwargs(
-            bss_eval_sources_framewise,
-            reference_sources,
-            estimated_sources,
-            **kwargs
-        )
-        scores['Sources Frames - Source to Distortion'] = sdr.tolist()
-        scores['Sources Frames - Source to Interference'] = sir.tolist()
-        scores['Sources Frames - Source to Artifact'] = sar.tolist()
-        scores['Sources Frames - Source permutation'] = perm.tolist()
-
-        sdr, sir, sar, perm = util.filter_kwargs(
-            bss_eval_sources,
-            reference_sources,
-            estimated_sources,
-            **kwargs
-        )
-        scores['Sources - Source to Distortion'] = sdr.tolist()
-        scores['Sources - Source to Interference'] = sir.tolist()
-        scores['Sources - Source to Artifact'] = sar.tolist()
-        scores['Sources - Source permutation'] = perm.tolist()
+    scores['Source to Distortion'] = sdr.tolist()
+    scores['Image to Spatial'] = isr.tolist()
+    scores['Source to Interference'] = sir.tolist()
+    scores['Source to Artifact'] = sar.tolist()
+    scores['Source permutation'] = perm.tolist()
 
     return scores
