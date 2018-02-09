@@ -3,17 +3,17 @@ import pytest
 import museval.metrics as metrics
 
 
-@pytest.fixture(params=[2, 3])
+@pytest.fixture(params=[2])
 def nb_sources(request):
     return request.param
 
 
-@pytest.fixture(params=[2000, 1000])
+@pytest.fixture(params=[2000])
 def nb_win(request):
     return request.param
 
 
-@pytest.fixture(params=[1000])
+@pytest.fixture(params=[2000])
 def nb_hop(request):
     return request.param
 

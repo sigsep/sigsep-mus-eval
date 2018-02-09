@@ -57,10 +57,11 @@ class TrackData(object):
             return D(D(number).quantize(D(precision)))
 
 
-def eval_estimates_dir(
+def eval_mus_dir(
     dataset,
     estimates_dir,
-    output_path=None
+    output_path=None,
+    *args, **kwargs
 ):
     def load_estimates(track):
         # load estimates from disk instead of processing
@@ -86,15 +87,16 @@ def eval_estimates_dir(
             except RuntimeError:
                 pass
 
-        eval_mus_track(
-            track,
-            user_results,
-            output_path=output_path
-        )
+        if user_results:
+            eval_mus_track(
+                track,
+                user_results,
+                output_path=output_path
+            )
 
         return None
 
-    dataset.run(load_estimates, estimates_dir=None, subsets="Test")
+    dataset.run(load_estimates, estimates_dir=None, *args, **kwargs)
 
 
 def eval_mus_track(
@@ -232,6 +234,8 @@ def eval_mus_track(
         except (ValueError, IOError):
             pass
 
+    return data.scores
+
 
 def safe_eval(
     audio_reference,
@@ -271,7 +275,7 @@ def _evaluate(
     hop=1*44100,
     mode='v4'
 ):
-    """BSS_EVAL images evaluation using mir_eval.separation module
+    """BSS_EVAL images evaluation using metrics module
     Parameters
     ----------
     references : np.ndarray, shape=(nsrc, nsampl, nchan)
