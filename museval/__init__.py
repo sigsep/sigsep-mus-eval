@@ -128,6 +128,65 @@ def _load_track_estimates(track, estimates_dir, output_dir):
     return None
 
 
+def eval_dir(
+    reference_dir,
+    estimates_dir,
+    output_dir=None,
+    mode='v4',
+    win=1.0,
+    hop=1.0
+):
+    reference = []
+    estimates = []
+
+    data = EvalStore(win=win, hop=hop)
+
+    global_rate = None
+    reference_glob = os.path.join(reference_dir, '*.wav')
+    # Load in each reference file in the supplied dir
+    for reference_file in glob.glob(reference_glob):
+        ref_audio, rate = sf.read(
+            reference_file,
+            always_2d=True
+        )
+        # Make sure fs is the same for all files
+        assert (global_rate is None or rate == global_rate)
+        global_rate = rate
+        reference.append(ref_audio)
+
+    estimated_glob = os.path.join(estimates_dir, '*.wav')
+    targets = []
+    for estimated_file in glob.glob(estimated_glob):
+        targets.append(os.path.basename(estimated_file))
+        ref_audio, rate = sf.read(
+            estimated_file,
+            always_2d=True
+        )
+        assert (global_rate is None or rate == global_rate)
+        global_rate = rate
+        estimates.append(ref_audio)
+
+    SDR, ISR, SIR, SAR = evaluate(
+        reference,
+        estimates,
+        win=int(win*global_rate),
+        hop=int(hop*global_rate),
+        mode=mode
+    )
+    for i, target in enumerate(targets):
+        values = {
+            "SDR": SDR[i].tolist(),
+            "SIR": SIR[i].tolist(),
+            "ISR": ISR[i].tolist(),
+            "SAR": SAR[i].tolist()
+        }
+
+        data.add_target(
+            target_name=target,
+            values=values
+        )
+
+
 def eval_mus_dir(
     dataset,
     estimates_dir,
