@@ -7,13 +7,13 @@
 [![Docs Status](https://readthedocs.org/projects/museval/badge/?version=latest)](https://museval.readthedocs.org/en/latest/)
 
 
-A python package to evaluate source separation results using the [MUSDB18](https://sigsep.github.io/musdb) dataset. This package is part of the [MUS task](https://sisec.inria.fr/home/2018-professionally-produced-music-recordings/) of the [Signal Separation Evaluation Campaign (SISEC)](https://sisec.inria.fr/). Using this package mandatory for submitting results for SiSEC as it includes the reference implementation of the new BSSEval version 4.
+A python package to evaluate source separation results using the [MUSDB18](https://sigsep.github.io/musdb) dataset. This package is part of the [MUS task](https://sisec.inria.fr/home/2018-professionally-produced-music-recordings/) of the [Signal Separation Evaluation Campaign (SISEC)](https://sisec.inria.fr/). Using this package is mandatory for submitting results to SiSEC as it includes the reference implementation of the new BSSEval version 4.
 
 ### BSSEval v4
 
-The BSSEval metrics, as implemented in the [MATLAB toolboxes](http://bass-db.gforge.inria.fr/bss_eval/) and its re-implementation in [mir_eval](http://craffel.github.io/mir_eval/#module-mir_eval.separation) are widely used in the audio separation literature. One particularity of BSSEval is to compute the metrics after optimally matching the estimates to the true sources through linear distortion filters. This allows the criteria to be robust to some linear mismatches. Apart from the optional computation of all possible permutations of the sources, this matching is the reason for most of the computation cost of BSSEval, especially considering it is done for each evaluation window when the metrics are computed on a framewise basis.
+The BSSEval metrics, as implemented in the [MATLAB toolboxes](http://bass-db.gforge.inria.fr/bss_eval/) and their re-implementation in [mir_eval](http://craffel.github.io/mir_eval/#module-mir_eval.separation) are widely used in the audio separation literature. One particularity of BSSEval is to compute the metrics after optimally matching the estimates to the true sources through linear distortion filters. This allows the criteria to be robust to some linear mismatches. Apart from the optional evaluation for all possible permutations of the sources, this matching is the reason for most of the computation cost of BSSEval, especially considering it is done for each evaluation window when the metrics are computed on a framewise basis.
 
-For this package, we dropped the assumption that distortion filters could be varying over time, but considered instead they are fixed for the whole length of the track. First, this _significantly reduces_ the computational cost for evaluation because matching needs to be done only once for the whole signal. Second, this introduces much more dynamics in the evaluation, because time-varying matching filters turn out to over-estimate performance. Third, this makes matching more robust, because true sources are not silent throughout the whole recording, while they often were for short windows.
+For this package, we enabled the option of having _time invariant_ distortion filters, instead of necessarily taking them as varying over time as done in the previous versions of BSS eval. First, enabling this option _significantly reduces_ the computational cost for evaluation because matching needs to be done only once for the whole signal. Second, it introduces much more dynamics in the evaluation, because time-varying matching filters turn out to over-estimate performance. Third, this makes matching more robust, because true sources are not silent throughout the whole recording, while they often were for short windows.
 
 ## Installation
 
@@ -27,11 +27,11 @@ pip install museval
 
 ## Usage
 
-The purpose of this package is to evaluate source separation results and write out standardized `json` files that can easiliy parsed by the SiSEC submission system. Furthermore we want to encourage users to use this evaluation output format as the standardized way to share source separation results for processed tracks. We provide two different ways to use `museval` in conjunction with your source separation results.
+The purpose of this package is to evaluate source separation results and write out standardized `json` files that can easiliy be parsed by the SiSEC submission system. Furthermore we want to encourage users to use this evaluation output format as the standardized way to share source separation results for processed tracks. We provide two different ways to use `museval` in conjunction with your source separation results.
 
 ### Run and Evaluate
 
-- If you want to evaluate while processing your source separation results, you can hook `museval` into your `musdb` user_function:
+- If you want to perform evaluation while processing your source separation results, you can hook `museval` into your `musdb` user_function:
 
 Here is an example for such a function separating the mixture into a __vocals__ and __accompaniment__ track:
 
@@ -60,11 +60,11 @@ def estimate_and_evaluate(track):
     # return estimates as usual
     return estimates
 
-# you usual way to run musdb
+# your usual way to run musdb
 musdb.DB().run()
 ```
 
-- Make sure `output_dir` is set. `museval` will recreate the `musdb` file structure in that folder and writes the evaluation results to this folder. __This folder should be submitted for your SiSEC contribution__.
+- Make sure `output_dir` is set. `museval` will recreate the `musdb` file structure in that folder and write the evaluation results to this folder. __This whole folder should be submitted for your SiSEC contribution__.
 
 ### Evaluate later
 
@@ -91,7 +91,7 @@ museval.eval_mus_dir(
 
 #### Commandline tool
 
-We provide a commandline wrapper of `eval_mus_dir` by calling the `museval` commandline tool. The following example is equivalent to code example above:
+We provide a commandline wrapper of `eval_mus_dir` by calling the `museval` commandline tool. The following example is equivalent to the code example above:
 
 ```
 museval your_estimate_dir -o your_output_dir -p
