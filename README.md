@@ -22,7 +22,7 @@ For this package, we dropped the assumption that distortion filters could be var
 You can install the `museval` parsing package using pip:
 
 ```bash
-pip install musdb
+pip install museval
 ```
 
 ## Usage
@@ -96,6 +96,10 @@ We provide a commandline wrapper of `eval_mus_dir` by calling the `museval` comm
 ```
 museval your_estimate_dir -o your_output_dir -p
 ```
+
+
+### Docker
+
 
 
 ## Evaluation and Submission
