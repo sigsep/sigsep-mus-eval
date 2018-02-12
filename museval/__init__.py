@@ -10,6 +10,7 @@ import soundfile as sf
 from jsonschema import validate
 import functools
 import musdb
+import museval
 
 
 class EvalStore(object):
@@ -31,7 +32,11 @@ class EvalStore(object):
         super(EvalStore, self).__init__()
         self.win = win
         self.hop = hop
-        with open("museval/musdb.schema.json") as json_file:
+
+        schema_path = os.path.join(
+            museval.__path__[0], 'musdb.schema.json'
+        )
+        with open(schema_path) as json_file:
             self.schema = json.load(json_file)
         self.scores = {
             'targets': []
