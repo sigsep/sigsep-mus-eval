@@ -467,7 +467,7 @@ def evaluate(
     win=1*44100,
     hop=1*44100,
     mode='v4',
-    padding=False
+    padding=True
 ):
     """BSS_EVAL images evaluation using metrics module
 
