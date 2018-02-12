@@ -3,6 +3,7 @@ import pytest
 import musdb
 import simplejson as json
 import museval
+import numpy as np
 
 
 json_path = os.path.join(
@@ -26,10 +27,14 @@ def test_estimate_and_evaluate(mus):
         tracknames=[os.path.splitext(os.path.basename(json_path))[0]]
     )[0]
 
+    np.random.seed(0)
+    random_voc = np.random.random(track.audio.shape)
+    random_acc = np.random.random(track.audio.shape)
+
     # create a silly regression test
     estimates = {
-        'vocals': track.targets['accompaniment'].audio,
-        'accompaniment': track.targets['vocals'].audio
+        'vocals': random_voc,
+        'accompaniment': random_acc
     }
 
     scores = museval.eval_mus_track(
