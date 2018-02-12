@@ -5,7 +5,10 @@ import simplejson as json
 import museval
 
 
-json_path = 'tests/data/PR - Oh No.json'
+json_path = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    'data/PR - Oh No.json',
+)
 
 
 @pytest.fixture()
