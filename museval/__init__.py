@@ -393,6 +393,7 @@ def eval_mus_track(
             )
 
     if output_dir:
+        # validate against the schema
         data.validate()
 
         try:
