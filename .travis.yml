@@ -13,6 +13,7 @@ before_install:
     - export PATH="$HOME/env/miniconda$TRAVIS_PYTHON_VERSION/bin:$PATH";
     - hash -r
     - source activate test-environment
+    - bash prepare_tests.sh
 
 install:
     - pip install -U pip wheel
