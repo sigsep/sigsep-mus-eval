@@ -39,7 +39,7 @@ if __name__ == "__main__":
         ],
 
         package_data={
-            'museval': ['schema.json'],
+            'museval': ['musdb.schema.json'],
         },
 
         extras_require={
