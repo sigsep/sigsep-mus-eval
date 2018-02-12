@@ -33,7 +33,7 @@ if [ ! -d "$src" ]; then
 
         source activate $ENV_NAME
 
-        conda install -c conda-forge ffmpeg
+        conda install -c conda-forge ffmpeg==3.4
 
         pip install python-coveralls
         pip install mock
