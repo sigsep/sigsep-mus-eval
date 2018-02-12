@@ -27,11 +27,10 @@ class EvalStore(object):
     scores : Dict
         Nested Dictionary of all scores
     """
-    def __init__(self, win=1, hop=1, rate=44100):
+    def __init__(self, win=1, hop=1):
         super(EvalStore, self).__init__()
         self.win = win
         self.hop = hop
-        self.rate = rate
         with open("museval/musdb.schema.json") as json_file:
             self.schema = json.load(json_file)
         self.scores = {
@@ -54,8 +53,8 @@ class EvalStore(object):
         }
         for i, v in enumerate(values['SDR']):
             frame_data = {
-                'time': i * self.hop / self.rate,
-                'duration': self.win / self.rate,
+                'time': i * self.hop,
+                'duration': self.win,
                 'metrics': {
                     "SDR": self._q(values['SDR'][i]),
                     "SIR": self._q(values['SIR'][i]),
@@ -414,10 +413,10 @@ def pad_or_truncate(
 def evaluate(
     estimates,
     references,
-    window=1*44100,
+    win=1*44100,
     hop=1*44100,
     mode='v4',
-    pad_or_truncate=True
+    padding=False
 ):
     """BSS_EVAL images evaluation using metrics module
 
@@ -448,14 +447,14 @@ def evaluate(
     estimates = np.array(estimates)
     references = np.array(references)
 
-    if pad_or_truncate:
+    if padding:
         references, estimates = pad_or_truncate(references, estimates)
 
     SDR, ISR, SIR, SAR, _ = metrics.bss_eval(
         references,
         estimates,
         compute_permutation=False,
-        window=window,
+        window=win,
         hop=hop,
         framewise_filters=(mode == "v3"),
         bsseval_sources_version=False

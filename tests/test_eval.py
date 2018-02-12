@@ -10,7 +10,7 @@ json_path = 'tests/data/PR - Oh No.json'
 
 @pytest.fixture()
 def mus():
-    return musdb.DB(root_dir='data/MUS-STEMS-SAMPLE')
+    return musdb.DB(root_dir='data/MUS-STEMS-SAMPLE', is_wav=True)
 
 
 def test_estimate_and_evaluate(mus):
@@ -24,8 +24,8 @@ def test_estimate_and_evaluate(mus):
     )[0]
 
     estimates = {
-        'vocals': track.audio,
-        'accompaniment': track.audio
+        'vocals': track.targets['accompaniment'].audio,
+        'accompaniment': track.targets['vocals'].audio
     }
 
     scores = museval.eval_mus_track(
