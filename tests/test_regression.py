@@ -36,6 +36,10 @@ def test_estimate_and_evaluate(mus):
         track, estimates
     )
 
+    print(scores)
+
+    assert scores.validate() is None
+
     with open(
         os.path.join('.', track.name) + '.json', 'w+'
     ) as f:

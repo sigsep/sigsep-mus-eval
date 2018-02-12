@@ -62,15 +62,7 @@ class EvalStore(object):
                     "ISR": self._q(values['ISR'][i])
                 }
             }
-        target_data['frames'].append(frame_data)
-
-        # compute mean values
-        target_data['avg_metrics'] = {
-            "SDR": self._q(np.mean(values['SDR'])),
-            "SIR": self._q(np.mean(values['SIR'])),
-            "SAR": self._q(np.mean(values['SAR'])),
-            "ISR": self._q(np.mean(values['ISR'])),
-        }
+            target_data['frames'].append(frame_data)
 
         self.scores['targets'].append(target_data)
 
@@ -91,26 +83,23 @@ class EvalStore(object):
         return json_string
 
     def __repr__(self):
-        """add target to scores Dictionary
+        """Print the mean values instead of all frames
 
         Returns
         ----------
-        json_string : str
-            json dump of the scores dictionary
+        str
+            mean values of all target metrics
         """
-        avg_scores = [
-            "%s: %s" % (
-                t['name'].ljust(20),
-                ', '.join(
-                    [
-                        str(k) + ':' + str(v)
-                        for k, v in t['avg_metrics'].items()
-                    ]
-                )
-            )
-            for t in self.scores['targets']
-        ]
-        return '\n'.join(avg_scores)
+        out = ""
+        for t in self.scores['targets']:
+            out += t['name'].ljust(20) + "=> "
+            for metric in ['SDR', 'SIR', 'ISR', 'SAR']:
+                out += metric + ":" + \
+                    str(np.nanmean(
+                        [np.float(f['metrics'][metric]) for f in t['frames']]
+                    )) + "dB, "
+            out += "\n"
+        return out
 
     def validate(self):
         """Validate scores against `musdb.schema`"""
