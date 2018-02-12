@@ -1,6 +1,8 @@
 import inspect
 import six
 
+__version__ = "0.1.0"
+
 
 def has_kwargs(function):
     r'''Determine whether a function has \*\*kwargs.

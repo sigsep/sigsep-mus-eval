@@ -10,10 +10,10 @@ dsd = dsdtools.DB()
 
 
 user_estimates_dir = ...
-output_path = ...
+output_dir = ...
 
 
-def load_estimates(track):
+def load_and_eval_estimates(track):
     # load estimates from disk instead of processing
     user_results = {}
     track.name = track.filename
@@ -39,15 +39,15 @@ def load_estimates(track):
     museval.eval_mus_track(
         track,
         user_results,
-        output_path=output_path,
-        mode='v3'
+        output_dir=output_dir,
+        mode='v3'  # use bss_eval v3 to reproduce sisec 2016 results
     )
 
     return None
 
 
 dsd.run(
-    load_estimates,
+    load_and_eval_estimates,
     estimates_dir=None,
     subsets="Test"
 )

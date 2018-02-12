@@ -5,8 +5,11 @@ import museval
 Hook in the the user_function and do evaluation in the `run` loop
 """
 
+output_dir = ...
+estimates_dir = ...
 
-def my_function(track):
+
+def estimate_and_evaluate(track):
     # return any number of targets
     estimates = {
         'vocals': track.audio,
@@ -14,14 +17,17 @@ def my_function(track):
     }
 
     museval.eval_mus_track(
-        track, estimates, output_path="ORL1_2018_1", mode='v4'
+        track, estimates, output_dir=output_dir
     )
 
     return estimates
 
 
 # initiate musdb
-mus = musdb.DB("data/MUS-STEMS-SAMPLE")
+mus = musdb.DB()
 
-# this might take 3 days to finish
-mus.run(my_function, estimates_dir="ORL1", subsets="test")
+mus.run(
+    estimate_and_evaluate,
+    estimates_dir=estimates_dir,
+    subsets="test"
+)

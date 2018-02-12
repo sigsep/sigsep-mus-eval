@@ -23,16 +23,9 @@ def test_estimate_and_evaluate(mus):
         tracknames=[os.path.splitext(os.path.basename(json_path))[0]]
     )[0]
 
-    fake = (
-        track.sources['vocals'].audio +
-        track.sources['other'].audio +
-        track.sources['drums'].audio +
-        track.sources['bass'].audio
-    )
-
     estimates = {
-        'vocals': fake,
-        'accompaniment': fake
+        'vocals': track.audio,
+        'accompaniment': track.audio
     }
 
     scores = museval.eval_mus_track(

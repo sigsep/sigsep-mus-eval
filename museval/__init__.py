@@ -7,21 +7,47 @@ import os
 from decimal import Decimal as D
 import glob
 import soundfile as sf
+from jsonschema import validate
+import functools
+import musdb
 
 
-class TrackData(object):
-    """Creates track dict with scores
+class EvalStore(object):
     """
-    def __init__(self, win, hop, rate):
-        super(TrackData, self).__init__()
+    Evaluation Track Data Storage Object
+
+    Attributes
+    ----------
+    win : float
+        evaluation window duration in seconds, default to 1s
+    hop : float
+        hop length in seconds, defaults to 1s
+    rate : int
+        Track sample rate
+    scores : Dict
+        Nested Dictionary of all scores
+    """
+    def __init__(self, win=1, hop=1, rate=44100):
+        super(EvalStore, self).__init__()
         self.win = win
         self.hop = hop
         self.rate = rate
+        with open("museval/musdb.schema.json") as json_file:
+            self.schema = json.load(json_file)
         self.scores = {
             'targets': []
         }
 
     def add_target(self, target_name, values):
+        """add target to scores Dictionary
+
+        Parameters
+        ----------
+        target_name : str
+            name of target to be added to list of targets
+        values : List(Dict)
+            List of framewise data entries, see `musdb.schema.json`
+        """
         target_data = {
             'name': target_name,
             'frames': []
@@ -42,6 +68,13 @@ class TrackData(object):
 
     @property
     def json(self):
+        """add target to scores Dictionary
+
+        Returns
+        ----------
+        json_string : str
+            json dump of the scores dictionary
+        """
         json_string = json.dumps(
             self.scores,
             indent=2,
@@ -49,61 +82,98 @@ class TrackData(object):
         )
         return json_string
 
+    def validate(self):
+        """Validate scores against `musdb.schema`"""
+        return validate(self.scores, self.schema)
+
     def _q(self, number, precision='.00001'):
-        """quantiztion of values"""
+        """quantiztion of BSSEval values"""
         if np.isinf(number):
             return np.nan
         else:
             return D(D(number).quantize(D(precision)))
 
 
+def _load_track_estimates(track, estimates_dir, output_dir):
+    """load estimates from disk instead of processing"""
+    user_results = {}
+    track_estimate_dir = os.path.join(
+        estimates_dir,
+        track.subset,
+        track.name
+    )
+    for target in glob.glob(
+        track_estimate_dir + '/*.wav'
+    ):
+
+        target_name = op.splitext(
+            os.path.basename(target)
+        )[0]
+        try:
+            target_audio, rate = sf.read(
+                target,
+                always_2d=True
+            )
+            user_results[target_name] = target_audio
+        except RuntimeError:
+            pass
+
+    if user_results:
+        eval_mus_track(
+            track,
+            user_results,
+            output_dir=output_dir
+        )
+
+    return None
+
+
 def eval_mus_dir(
     dataset,
     estimates_dir,
-    output_path=None,
+    output_dir=None,
     *args, **kwargs
 ):
-    def load_estimates(track):
-        # load estimates from disk instead of processing
-        user_results = {}
-        track_estimate_dir = os.path.join(
-            estimates_dir,
-            track.subset,
-            track.name
-        )
-        for target in glob.glob(
-            track_estimate_dir + '/*.wav'
-        ):
+    """Run musdb.run for the purpose of evaluation of musdb estimate dir
 
-            target_name = op.splitext(
-                os.path.basename(target)
-            )[0]
-            try:
-                target_audio, rate = sf.read(
-                    target,
-                    always_2d=True
-                )
-                user_results[target_name] = target_audio
-            except RuntimeError:
-                pass
-
-        if user_results:
-            eval_mus_track(
-                track,
-                user_results,
-                output_path=output_path
-            )
-
-        return None
-
-    dataset.run(load_estimates, estimates_dir=None, *args, **kwargs)
+    Parameters
+    ----------
+    dataset : DB(object)
+        Musdb Database object.
+    estimates_dir : str
+        Path to estimates folder.
+    output_dir : str
+        Output folder where evaluation json files are stored.
+    *args
+        Variable length argument list for `musdb.run()`.
+    **kwargs
+        Arbitrary keyword arguments for `musdb.run()`.
+    """
+    # create a new musdb instance for estimates with the same file structure
+    est = musdb.DB(root_dir=estimates_dir, is_wav=True)
+    # load all estimates track_names
+    est_tracks = est.load_mus_tracks()
+    # get a list of track names
+    tracknames = [t.name for t in est_tracks]
+    # load only musdb tracks where we have estimate tracks
+    tracks = dataset.load_mus_tracks(tracknames=tracknames)
+    # wrap the estimate loader
+    run_fun = functools.partial(
+        _load_track_estimates,
+        estimates_dir=estimates_dir,
+        output_dir=output_dir
+    )
+    # evaluate tracks
+    dataset.run(run_fun, estimates_dir=None, tracks=tracks, *args, **kwargs)
 
 
 def eval_mus_track(
     track,
     user_estimates,
-    output_path=None,
+    output_dir=None,
     mode='v4',
+    win=1.0,
+    hop=1.0
 ):
     """Compute all bss_eval metrics for the musdb track and estimated signals,
     given by a `user_estimates` dict.
@@ -113,18 +183,23 @@ def eval_mus_track(
     track : Track
         musdb track object loaded using musdb
     estimated_sources : Dict
-        dictionary, containing the user estimates.
-    output_path : str
+        dictionary, containing the user estimates as np.arrays.
+    output_dir : str
         path to output directory used to save evaluation results. Defaults to
         `None`, meaning no evaluation files will be saved.
     mode : str
-        bsseval version number. Defaults to 'v4'."""
+        bsseval version number. Defaults to 'v4'.
+    win : int
+        window size in
+
+    Returns
+    -------
+    scores : Dict
+        Nested Dict of all scores. To be stored as json
+    """
 
     audio_estimates = []
     audio_reference = []
-
-    window = track.rate * 1
-    hop = track.rate * 1
 
     # make sure to always build the list in the same order
     # therefore track.targets is an OrderedDict
@@ -140,11 +215,7 @@ def eval_mus_track(
         # append this target name to the list of target to evaluate
         eval_targets.append(key)
 
-    data = TrackData(
-        win=window,
-        hop=hop,
-        rate=track.rate
-    )
+    data = EvalStore(win=win, hop=hop)
 
     # check if vocals and accompaniment is among the targets
     has_acc = all(x in eval_targets for x in ['vocals', 'accompaniment'])
@@ -159,10 +230,12 @@ def eval_mus_track(
             audio_estimates.append(user_estimates[target])
             audio_reference.append(track.targets[target].audio)
 
-        SDR, ISR, SIR, SAR = safe_eval(
+        SDR, ISR, SIR, SAR = evaluate(
             audio_reference,
             audio_estimates,
-            win=window, hop=hop, mode=mode
+            win=int(win*track.rate),
+            hop=int(hop*track.rate),
+            mode=mode
         )
 
         # iterate over all evaluation results except for vocals
@@ -194,10 +267,12 @@ def eval_mus_track(
             audio_estimates.append(user_estimates[target])
             audio_reference.append(track.targets[target].audio)
 
-        SDR, ISR, SIR, SAR = safe_eval(
+        SDR, ISR, SIR, SAR = evaluate(
             audio_reference,
             audio_estimates,
-            win=window, hop=hop, mode=mode
+            win=int(win*track.rate),
+            hop=int(hop*track.rate),
+            mode=mode
         )
 
         # iterate over all targets
@@ -214,12 +289,12 @@ def eval_mus_track(
                 values=values
             )
 
-    if output_path:
-        try:
-            # schema.validate(data.scores)
+    if output_dir:
+        data.validate()
 
+        try:
             subset_path = op.join(
-                output_path,
+                output_dir,
                 track.subset
             )
 
@@ -231,20 +306,33 @@ def eval_mus_track(
             ) as f:
                 f.write(data.json)
 
-        except (ValueError, IOError):
+        except (IOError):
             pass
 
     return data.scores
 
 
-def safe_eval(
+def pad_or_truncate(
     audio_reference,
-    audio_estimates,
-    win, hop, mode
+    audio_estimates
 ):
+    """Pad or truncate estimates by duration of references:
+    - If reference > estimates: add zeros at the and of the estimated signal
+    - If estimates > references: truncate estimates to duration of references
 
-    audio_estimates = np.array(audio_estimates)
-    audio_reference = np.array(audio_reference)
+    Parameters
+    ----------
+    references : np.ndarray, shape=(nsrc, nsampl, nchan)
+        array containing true reference sources
+    estimates : np.ndarray, shape=(nsrc, nsampl, nchan)
+        array containing estimated sources
+    Returns
+    -------
+    references : np.ndarray, shape=(nsrc, nsampl, nchan)
+        array containing true reference sources
+    estimates : np.ndarray, shape=(nsrc, nsampl, nchan)
+        array containing estimated sources
+    """
 
     if audio_estimates.shape[1] != audio_reference.shape[1]:
         if audio_estimates.shape[1] > audio_reference.shape[1]:
@@ -261,27 +349,31 @@ def safe_eval(
                 mode='constant'
             )
 
-    SDR, ISR, SIR, SAR = _evaluate(
-        audio_estimates, audio_reference, win, hop, mode
-    )
-
-    return SDR, ISR, SIR, SAR
+    return audio_reference, audio_estimates
 
 
-def _evaluate(
+def evaluate(
     estimates,
     references,
     window=1*44100,
     hop=1*44100,
-    mode='v4'
+    mode='v4',
+    pad_or_truncate=True
 ):
     """BSS_EVAL images evaluation using metrics module
+
     Parameters
     ----------
     references : np.ndarray, shape=(nsrc, nsampl, nchan)
         array containing true reference sources
     estimates : np.ndarray, shape=(nsrc, nsampl, nchan)
         array containing estimated sources
+    window : int, defaults to 44100
+        window size in samples
+    hop : int
+        hop size in samples, defaults to 44100 (no overlap)
+    mode : str
+        BSSEval version, default to `v4`
     Returns
     -------
     SDR : np.ndarray, shape=(nsrc,)
@@ -294,7 +386,13 @@ def _evaluate(
         vector of Sources to Artifacts Ratios (SAR)
     """
 
-    sdr, isr, sir, sar, _ = metrics.bss_eval(
+    estimates = np.array(estimates)
+    references = np.array(references)
+
+    if pad_or_truncate:
+        references, estimates = pad_or_truncate(references, estimates)
+
+    SDR, ISR, SIR, SAR, _ = metrics.bss_eval(
         references,
         estimates,
         compute_permutation=False,
@@ -304,4 +402,4 @@ def _evaluate(
         bsseval_sources_version=False
     )
 
-    return sdr, isr, sir, sar
+    return SDR, ISR, SIR, SAR

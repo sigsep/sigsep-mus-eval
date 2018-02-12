@@ -23,6 +23,9 @@ if __name__ == "__main__":
         # find_packages() finds all these automatically for you
         packages=setuptools.find_packages(),
 
+        entry_points={
+            'console_scripts': ['museval=museval.cli:museval'],
+        },
         # Dependencies, this installs the entire Python scientific
         # computations stack
         install_requires=[
@@ -31,7 +34,8 @@ if __name__ == "__main__":
             'scipy',
             'six',
             'simplejson',
-            'soundfile'
+            'soundfile',
+            'jsonschema'
         ],
 
         package_data={

@@ -6,7 +6,7 @@ Modules
     :undoc-members:
     :show-inheritance:
     :inherited-members:
-.. autoclass: museval.TrackData
+.. autoclass: museval.EvalStore
     :members:
 
 .. toctree::
