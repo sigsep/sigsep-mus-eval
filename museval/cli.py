@@ -82,13 +82,19 @@ def museval(inargs=None):
     )
 
     parser.add_argument(
+        '--musdb',
+        help='path to musdb',
+        type=str
+    )
+
+    parser.add_argument(
         '--version', '-v',
         action='version',
         version='%%(prog)s %s' % util.__version__
     )
 
     args = parser.parse_args(inargs)
-    mus = musdb.DB()
+    mus = musdb.DB(root_dir=args.musdb)
 
     if not args.o:
         output_dir = args.estimates_dir
