@@ -18,7 +18,7 @@ def nb_hop(request):
     return request.param
 
 
-@pytest.fixture(params=[1, 2])
+@pytest.fixture(params=[2])
 def nb_channels(request):
     return request.param
 
@@ -90,13 +90,6 @@ def test_silent_input(
         )
 
 
-# @pytest.mark.parametrize(
-#     "nb_hop",
-#     [
-#         100,
-#         pytest.mark.xfail(-1, raises=ValueError)
-#     ]
-# )
 def test_metric(
     references, estimates, is_framewise, is_sources, nb_win, nb_hop
 ):
