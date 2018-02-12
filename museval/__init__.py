@@ -442,18 +442,19 @@ def pad_or_truncate(
     estimates : np.ndarray, shape=(nsrc, nsampl, nchan)
         array containing estimated sources
     """
-
-    if audio_estimates.shape[1] != audio_reference.shape[1]:
-        if audio_estimates.shape[1] > audio_reference.shape[1]:
-            audio_estimates = audio_estimates[:, :audio_reference.shape[1], :]
+    est_shape = audio_estimates.shape
+    ref_shape = audio_reference.shape
+    if est_shape[1] != ref_shape[1]:
+        if est_shape[1] >= ref_shape[1]:
+            audio_estimates = audio_estimates[:, :ref_shape[1], :]
         else:
             # pad end with zeros
-            np.pad(
+            audio_estimates = np.pad(
                 audio_estimates,
                 [
-                    (0, 0, 0),
-                    (0, 0, audio_reference.shape[1] - audio_estimates[1]),
-                    (0, 0, 0)
+                    (0, 0),
+                    (0, ref_shape[1] - est_shape[1]),
+                    (0, 0)
                 ],
                 mode='constant'
             )
