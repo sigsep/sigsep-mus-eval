@@ -95,9 +95,9 @@ class EvalStore(object):
             out += t['name'].ljust(20) + "=> "
             for metric in ['SDR', 'SIR', 'ISR', 'SAR']:
                 out += metric + ":" + \
-                    str(np.nanmean(
+                    "%0.3f" % np.nanmean(
                         [np.float(f['metrics'][metric]) for f in t['frames']]
-                    )) + "dB, "
+                    ) + "dB, "
             out += "\n"
         return out
 

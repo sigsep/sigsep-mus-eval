@@ -20,7 +20,7 @@ def mus():
 def test_estimate_and_evaluate(mus):
     # return any number of targets
     with open(json_path) as json_file:
-        reference_scores = json.loads(json_file.read())
+        ref = json.loads(json_file.read())
 
     print(os.path.basename(json_path))
     track = mus.load_mus_tracks(
@@ -51,4 +51,17 @@ def test_estimate_and_evaluate(mus):
         f.write(scores.json)
 
     scores = json.loads(scores.json)
-    assert reference_scores == scores
+
+    for target in ref['targets']:
+        for metric in ['SDR', 'SIR', 'SAR', 'ISR']:
+
+            ref = np.array([d['metrics'][metric] for d in target['frames']])
+            idx = [t['name'] for t in scores['targets']].index(target['name'])
+            est = np.array(
+                [
+                    d['metrics'][metric]
+                    for d in scores['targets'][idx]['frames']
+                ]
+            )
+
+            assert np.allclose(ref, est)
