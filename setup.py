@@ -24,7 +24,10 @@ if __name__ == "__main__":
         packages=setuptools.find_packages(),
 
         entry_points={
-            'console_scripts': ['museval=museval.cli:museval'],
+            'console_scripts': [
+                'museval=museval.cli:museval',
+                'bsseval=museval.cli:bsseval'
+            ],
         },
         # Dependencies, this installs the entire Python scientific
         # computations stack

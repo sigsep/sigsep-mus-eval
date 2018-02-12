@@ -62,7 +62,16 @@ class EvalStore(object):
                     "ISR": self._q(values['ISR'][i])
                 }
             }
-            target_data['frames'].append(frame_data)
+        target_data['frames'].append(frame_data)
+
+        # compute mean values
+        target_data['avg_metrics'] = {
+            "SDR": self._q(np.mean(values['SDR'])),
+            "SIR": self._q(np.mean(values['SIR'])),
+            "SAR": self._q(np.mean(values['SAR'])),
+            "ISR": self._q(np.mean(values['ISR'])),
+        }
+
         self.scores['targets'].append(target_data)
 
     @property
@@ -80,6 +89,28 @@ class EvalStore(object):
             allow_nan=True
         )
         return json_string
+
+    def __repr__(self):
+        """add target to scores Dictionary
+
+        Returns
+        ----------
+        json_string : str
+            json dump of the scores dictionary
+        """
+        avg_scores = [
+            "%s: %s" % (
+                t['name'].ljust(20),
+                ', '.join(
+                    [
+                        str(k) + ':' + str(v)
+                        for k, v in t['avg_metrics'].items()
+                    ]
+                )
+            )
+            for t in self.scores['targets']
+        ]
+        return '\n'.join(avg_scores)
 
     def validate(self):
         """Validate scores against `musdb.schema`"""
@@ -133,8 +164,31 @@ def eval_dir(
     output_dir=None,
     mode='v4',
     win=1.0,
-    hop=1.0
+    hop=1.0,
 ):
+    """Compute bss_eval metrics for two given directories assuming file
+    names are identical for both, reference source and estimates.
+
+    Parameters
+    ----------
+    reference_dir : str
+        path to reference sources directory.
+    estimates_dir : str
+        path to estimates directory.
+    output_dir : str
+        path to output directory used to save evaluation results. Defaults to
+        `None`, meaning no evaluation files will be saved.
+    mode : str
+        bsseval version number. Defaults to 'v4'.
+    win : int
+        window size in
+
+    Returns
+    -------
+    scores : EvalStore
+        scores object that holds the framewise and global evaluation scores.
+    """
+
     reference = []
     estimates = []
 
@@ -184,6 +238,8 @@ def eval_dir(
             target_name=target,
             values=values
         )
+
+    return data
 
 
 def eval_mus_dir(
@@ -252,8 +308,8 @@ def eval_mus_track(
 
     Returns
     -------
-    scores : Dict
-        Nested Dict of all scores. To be stored as json
+    scores : EvalStore
+        scores object that holds the framewise and global evaluation scores.
     """
 
     audio_estimates = []
@@ -367,7 +423,7 @@ def eval_mus_track(
         except (IOError):
             pass
 
-    return data.scores
+    return data
 
 
 def pad_or_truncate(

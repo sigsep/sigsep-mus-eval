@@ -23,6 +23,7 @@ def test_estimate_and_evaluate(mus):
         tracknames=[os.path.splitext(os.path.basename(json_path))[0]]
     )[0]
 
+    # create a silly regression test
     estimates = {
         'vocals': track.targets['accompaniment'].audio,
         'accompaniment': track.targets['vocals'].audio
@@ -32,5 +33,10 @@ def test_estimate_and_evaluate(mus):
         track, estimates
     )
 
-    scores = json.loads(json.dumps(scores))
+    with open(
+        os.path.join('.', track.name) + '.json', 'w+'
+    ) as f:
+        f.write(scores.json)
+
+    scores = json.loads(scores.json)
     assert reference_scores == scores
