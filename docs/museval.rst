@@ -1,4 +1,4 @@
-Modules
+museval modules
 -------
 
 .. automodule:: museval
@@ -9,8 +9,4 @@ Modules
 .. autoclass: museval.EvalStore
     :members:
 
-.. toctree::
-   :maxdepth: 3
-
    self
-   museval.metrics

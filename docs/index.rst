@@ -12,8 +12,9 @@ Contents:
 .. toctree::
    :maxdepth: 3
 
-   example
+   usage
    museval
+   museval.metrics
 
 References
 ~~~~~~~~~~

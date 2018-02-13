@@ -1,4 +1,4 @@
-Metrics (BSSEval v4)
+BSSEval v4
 --------------------
 
 .. automodule:: museval.metrics
