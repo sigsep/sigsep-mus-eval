@@ -103,7 +103,7 @@ If you don't want to set up a Python environment to run the evaluation, we would
 
 #### 1. Pull Docker Container
 
-Pull our precompiled `sigsep-mus-eval` image from dockerhub:
+Pull our precompiled `sigsep-mus-eval` image from [dockerhub](https://hub.docker.com/r/faroit/sigsep-mus-eval/):
 
 ```
 docker pull faroit/sigsep-mus-eval
@@ -111,13 +111,19 @@ docker pull faroit/sigsep-mus-eval
 
 #### 2. Run evaluation
 
-Lets assume you have stored the estimates directory in `path/to/estimate_dir`, the MUSDB18 is stored in `path/to/musdb`, and you want to write the output.json files to `path/to/output_dir`. You then just mount these directories into the docker container using the `-v` flags and run the container:
+The to run the evaluation inside of the docker, three absolute paths are required, in the following we use:
+
+* `estimatesdir` will stand here for the absolute path to the estimates directory. (For instance `/home/faroit/dev/mymethod/musdboutput`)
+* `musdbdir` will stand here for the absolute path to the root folder of musdb. (For instance `/home/faroit/dev/data/musdb18`)
+* `outputdir` will stand here for the absolute path to the output directory. (For instance `/home/faroit/dev/mymethod/scores`)
+
+We just mount these directories into the docker container using the `-v` flags and start the docker instance:
 
 ```
-docker run --rm -v path/to/estimate_dir:/est -v path/to/musdb:/mus -v path/to/output_dir:/out faroit/sigsep-mus-eval --mus /mus -o /out /est
+docker run --rm -v estimatesdir:/est -v musdbdir:/mus -v outputdir:/out faroit/sigsep-mus-eval --mus /mus -o /out /est
 ```
 
-Please note hat docker requires absolute paths so you have to rely on your command line environment to convert relative paths to absolute paths (e.g. by using `$HOME/` on Unix).
+In the line above, replace `estimatesdir`, `musdbdir` and `outputdir` by the absolute paths for your setting.  Please note that docker requires absolute paths so you have to rely on your command line environment to convert relative paths to absolute paths (e.g. by using `$HOME/` on Unix).
 
 :warning: `museval` requires a significant amount of memory for the evaluation. Evaluating all five targets for musdb18 may require more than 4GB of RAM. If you use multiprocessing by using the `-p` switch in `museval`, this results in 16GB of RAM. It is recommended to adjust your Docker preferences, because the docker container might just quit if its out of memory.
 
