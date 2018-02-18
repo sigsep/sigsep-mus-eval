@@ -99,7 +99,7 @@ museval -p --mus path/to/musdb -o path/to/output_dir path/to/estimate_dir
 
 ### Using Docker for Evaluation
 
-If you don't want to set up a Python environment to run the evaluation, we would recommend to use [Docker](http://docker.com).
+If you don't want to set up a Python environment to run the evaluation, we would recommend to use [Docker](http://docker.com). Assuming you have already computed your estimates and installed docker in your machine, you just need to run the following two lines in your terminal:
 
 #### 1. Pull Docker Container
 
