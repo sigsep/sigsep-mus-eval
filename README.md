@@ -111,7 +111,7 @@ docker pull faroit/sigsep-mus-eval
 
 #### 2. Run evaluation
 
-The to run the evaluation inside of the docker, three absolute paths are required, in the following we use:
+To run the evaluation inside of the docker, three absolute paths are required:
 
 * `estimatesdir` will stand here for the absolute path to the estimates directory. (For instance `/home/faroit/dev/mymethod/musdboutput`)
 * `musdbdir` will stand here for the absolute path to the root folder of musdb. (For instance `/home/faroit/dev/data/musdb18`)
