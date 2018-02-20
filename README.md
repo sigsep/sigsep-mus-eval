@@ -127,7 +127,7 @@ In the line above, replace `estimatesdir`, `musdbdir` and `outputdir` by the abs
 
 :warning: `museval` requires a significant amount of memory for the evaluation. Evaluating all five targets for musdb18 may require more than 4GB of RAM. If you use multiprocessing by using the `-p` switch in `museval`, this results in 16GB of RAM. It is recommended to adjust your Docker preferences, because the docker container might just quit if its out of memory.
 
-## Evaluation and Submission
+## Submission
 
 Please refer to our [Submission site](https://github.com/sigsep/sigsep-mus-2018).
 
