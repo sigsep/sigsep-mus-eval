@@ -17,6 +17,14 @@ def mus():
     return musdb.DB(root_dir='data/MUS-STEMS-SAMPLE', is_wav=True)
 
 
+def test_evaluate_mus_dir(mus):
+    museval.eval_mus_dir(
+        dataset=mus,  # instance of musdb
+        estimates_dir='data/EST',  # path to estimate folder
+        output_dir='data/EST_scores',  # set a folder to write eval json files
+    )
+
+
 def test_estimate_and_evaluate(mus):
     # return any number of targets
     with open(json_path) as json_file:

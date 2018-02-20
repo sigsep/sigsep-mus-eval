@@ -88,13 +88,18 @@ def museval(inargs=None):
     )
 
     parser.add_argument(
+        '--iswav', help='Read musdb wav instead of stems',
+        action='store_true',
+    )
+
+    parser.add_argument(
         '--version', '-v',
         action='version',
         version='%%(prog)s %s' % util.__version__
     )
 
     args = parser.parse_args(inargs)
-    mus = musdb.DB(root_dir=args.musdb)
+    mus = musdb.DB(root_dir=args.musdb, is_wav=args.iswav)
 
     if not args.o:
         output_dir = args.estimates_dir
