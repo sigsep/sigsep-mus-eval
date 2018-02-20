@@ -94,7 +94,7 @@ museval.eval_mus_dir(
 We provide a commandline wrapper of `eval_mus_dir` by calling the `museval` commandline tool. The following example is equivalent to the code example above:
 
 ```
-museval -p --mus path/to/musdb -o path/to/output_dir path/to/estimate_dir
+museval -p --musdb path/to/musdb -o path/to/output_dir path/to/estimate_dir
 ```
 
 ### Using Docker for Evaluation
@@ -120,7 +120,7 @@ The to run the evaluation inside of the docker, three absolute paths are require
 We just mount these directories into the docker container using the `-v` flags and start the docker instance:
 
 ```
-docker run --rm -v estimatesdir:/est -v musdbdir:/mus -v outputdir:/out faroit/sigsep-mus-eval --mus /mus -o /out /est
+docker run --rm -v estimatesdir:/est -v musdbdir:/mus -v outputdir:/out faroit/sigsep-mus-eval --musdb /mus -o /out /est
 ```
 
 In the line above, replace `estimatesdir`, `musdbdir` and `outputdir` by the absolute paths for your setting.  Please note that docker requires absolute paths so you have to rely on your command line environment to convert relative paths to absolute paths (e.g. by using `$HOME/` on Unix).
