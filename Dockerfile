@@ -2,6 +2,7 @@ FROM continuumio/miniconda3
 
 WORKDIR /museval
 
+RUN apt-get update && apt-get install -y curl
 RUN apt-get -y install libsndfile1-dev
 RUN pip install -U pip wheel
 RUN conda install numpy scipy cffi
