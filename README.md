@@ -1,3 +1,5 @@
+:warning: Currently still in beta. Please wait for the official release
+
 # museval
 
 [![Build Status](https://travis-ci.org/sigsep/sigsep-mus-eval.svg?branch=master)](https://travis-ci.org/sigsep/sigsep-mus-eval)
