@@ -463,8 +463,8 @@ def pad_or_truncate(
 
 
 def evaluate(
-    estimates,
     references,
+    estimates,
     win=1*44100,
     hop=1*44100,
     mode='v4',
