@@ -57,8 +57,8 @@ project = u'museval'
 copyright = u'2018, Fabian-Robert Stöter'
 author = u'Fabian-Robert Stöter'
 
-version = u'0.1.0'
-release = u'0.1.0'
+version = u'0.2.0'
+release = u'0.2.0'
 
 language = None
 
@@ -70,7 +70,7 @@ todo_include_todos = False
 
 html_static_path = ['_static']
 
-htmlhelp_basename = 'musdbdoc'
+htmlhelp_basename = 'musevaldoc'
 
 latex_elements = {
 }
@@ -86,7 +86,7 @@ man_pages = [
 ]
 
 texinfo_documents = [
-  (master_doc, 'museval', u'musdb Documentation',
+  (master_doc, 'museval', u'museval Documentation',
    author, 'museval', 'One line description of project.',
    'Miscellaneous'),
 ]
