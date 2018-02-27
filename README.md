@@ -4,7 +4,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/sigsep/sigsep-mus-eval/badge.svg?branch=master)](https://coveralls.io/github/sigsep/sigsep-mus-eval?branch=master)
 [![Latest Version](https://img.shields.io/pypi/v/museval.svg)](https://pypi.python.org/pypi/museval)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/museval.svg)](https://pypi.python.org/pypi/museval)
-[![Docs Status](https://readthedocs.org/projects/museval/badge/?version=latest)](https://museval.readthedocs.org/en/latest/)
 
 
 A python package to evaluate source separation results using the [MUSDB18](https://sigsep.github.io/musdb) dataset. This package is part of the [MUS task](https://sisec.inria.fr/home/2018-professionally-produced-music-recordings/) of the [Signal Separation Evaluation Campaign (SISEC)](https://sisec.inria.fr/). Using this package is mandatory for submitting results to SiSEC as it includes the reference implementation of the new BSSEval version 4.
