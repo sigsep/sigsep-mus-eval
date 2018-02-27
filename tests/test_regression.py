@@ -21,7 +21,20 @@ def test_evaluate_mus_dir(mus):
     museval.eval_mus_dir(
         dataset=mus,  # instance of musdb
         estimates_dir='data/EST',  # path to estimate folder
-        output_dir='data/EST_scores',  # set a folder to write eval json files
+        output_dir='data/EST_scores_mus_dir',  # set a folder to write eval
+    )
+
+
+def test_eval_dir(mus):
+    with pytest.raises(ValueError):
+        museval.eval_dir(
+            reference_dir='data/EST',  # path to estimate folder
+            estimates_dir='data/EST',  # set a folder to write eval json files
+        )
+
+    museval.eval_dir(
+        reference_dir='data/EST/train/Music Delta - Rock',
+        estimates_dir='data/EST/train/Music Delta - Rock'
     )
 
 
@@ -48,8 +61,6 @@ def test_estimate_and_evaluate(mus):
     scores = museval.eval_mus_track(
         track, estimates
     )
-
-    print(scores)
 
     assert scores.validate() is None
 

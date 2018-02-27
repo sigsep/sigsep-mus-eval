@@ -201,6 +201,9 @@ def eval_dir(
         global_rate = rate
         reference.append(ref_audio)
 
+    if not reference:
+        raise ValueError('`reference_dir` contains no wav files')
+
     estimated_glob = os.path.join(estimates_dir, '*.wav')
     targets = []
     for estimated_file in glob.glob(estimated_glob):

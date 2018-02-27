@@ -100,3 +100,19 @@ def test_metric(
         window=nb_win,
         hop=nb_hop
     )
+
+
+def test_wrappers(
+    references, estimates, is_framewise, is_sources, nb_win, nb_hop
+):
+    functions = [
+        metrics.bss_eval_sources,
+        metrics.bss_eval_images,
+        metrics.bss_eval_sources_framewise,
+        metrics.bss_eval_images_framewise
+    ]
+
+    for function in functions:
+        function(
+            references, estimates,
+        )

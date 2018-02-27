@@ -7,7 +7,7 @@ import musdb
 
 def bsseval(inargs=None):
     """
-    Commandline interface for museval evaluation tools
+    Generic cli app for bsseval results. Expects two folder with
     """
     parser = argparse.ArgumentParser()
 
