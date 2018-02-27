@@ -11,11 +11,6 @@ json_path = os.path.join(
     'data/Music Delta - Rock.json',
 )
 
-est_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    'data/EST/train/Music Delta - Rock/',
-)
-
 
 @pytest.fixture()
 def mus():
@@ -36,11 +31,6 @@ def test_eval_dir(mus):
             reference_dir='data/EST',  # path to estimate folder
             estimates_dir='data/EST',  # set a folder to write eval json files
         )
-
-    museval.eval_dir(
-        reference_dir=est_dir,
-        estimates_dir=est_dir
-    )
 
 
 def test_estimate_and_evaluate(mus):
