@@ -6,3 +6,5 @@ museval modules
     :undoc-members:
     :show-inheritance:
     :inherited-members:
+
+    self
