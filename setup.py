@@ -6,7 +6,7 @@ if __name__ == "__main__":
         name='museval',
 
         # Version
-        version="0.1.2",
+        version="0.2.0",
 
         # Description
         description='Evaluation tools for the SIGSEP MUS database',

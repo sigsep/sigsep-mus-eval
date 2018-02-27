@@ -1,7 +1,7 @@
 import inspect
 import six
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 
 def has_kwargs(function):
