@@ -87,9 +87,12 @@ museval.eval_mus_dir(
     estimates_dir=...,  # path to estimate folder
     output_dir=...,  # set a folder to write eval json files
     subsets="Test",
-    parallel=True
+    parallel=True,
+    is_wav=False
 )
 ```
+
+:bulb: When evaluating later, please make sure you use the same environment used for separation or use the [decoded wav dataset](https://github.com/sigsep/sigsep-mus-io). This is important since the reference sources are loaded from the stems on the fly and certain FFMPEG version produce different zero-padding. We tested several different machines and ffmpeg version and did not run into any problems, but we cannot guarantee that the decoded outputs of two different ffmpeg versions are identical and would not affect the bsseval scores. E.g. when silence > 512 samples would be added in the beginning of a target source.
 
 #### Commandline tool
 
@@ -98,6 +101,8 @@ We provide a commandline wrapper of `eval_mus_dir` by calling the `museval` comm
 ```
 museval -p --musdb path/to/musdb -o path/to/output_dir path/to/estimate_dir
 ```
+
+:bulb: you use the `--iswav` flag to use the decoded wav musdb dataset.
 
 ### Using Docker for Evaluation
 
