@@ -1,5 +1,5 @@
 pip >= 8.0.0
-wheel
+wheel==0.30.0
 numpy>=1.7
 sphinx
 sphinx_rtd_theme
