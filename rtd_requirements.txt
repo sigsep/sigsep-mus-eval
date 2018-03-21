@@ -1,7 +1,7 @@
 pip >= 8.0.0
 wheel==0.30.0
 numpy>=1.7
-sphinx
+sphinx==1.7.2
 sphinx_rtd_theme
 numpydoc
 museval
