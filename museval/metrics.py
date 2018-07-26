@@ -431,9 +431,9 @@ class Framing:
     """helper iterator class to do overlapped windowing"""
     def __init__(self, window, hop, length):
         self.current = 0
-        self.window = window
-        self.hop = hop
-        self.length = length
+        self.window = int(window)
+        self.hop = int(hop)
+        self.length = int(length)
 
     def __iter__(self):
         return self
