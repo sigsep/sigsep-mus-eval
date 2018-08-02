@@ -431,9 +431,9 @@ class Framing:
     """helper iterator class to do overlapped windowing"""
     def __init__(self, window, hop, length):
         self.current = 0
-        self.window = int(window)
-        self.hop = int(hop)
-        self.length = int(length)
+        self.window = window
+        self.hop = hop
+        self.length = length
 
     def __iter__(self):
         return self
@@ -448,6 +448,8 @@ class Framing:
             stop = min(self.current * self.hop + self.window, self.length)
             if np.isnan(stop) or np.isinf(stop):
                 stop = self.length
+            start = int(np.floor(start))
+            stop = int(np.floor(stop))
             result = slice(start, stop)
             self.current += 1
             return result
