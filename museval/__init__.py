@@ -87,6 +87,14 @@ class EvalStore(object):
         )
         return json_string
 
+    @property
+    def mean_score(self, target, metric):
+        t = self.scores['targets'][target]
+        average = np.nanmean(
+            [np.float(f['metrics'][metric]) for f in t['frames']]
+        )
+        return average
+
     def __repr__(self):
         """Print the mean values instead of all frames
 
@@ -100,9 +108,7 @@ class EvalStore(object):
             out += t['name'].ljust(20) + "=> "
             for metric in ['SDR', 'SIR', 'ISR', 'SAR']:
                 out += metric + ":" + \
-                    "%0.3f" % np.nanmean(
-                        [np.float(f['metrics'][metric]) for f in t['frames']]
-                    ) + "dB, "
+                    "%0.3f" % self.mean_score(t, metric) + "dB, "
             out += "\n"
         return out
 
