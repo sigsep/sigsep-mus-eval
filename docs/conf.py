@@ -57,8 +57,8 @@ project = u'museval'
 copyright = u'2018, Fabian-Robert Stöter'
 author = u'Fabian-Robert Stöter'
 
-version = u'0.2.0'
-release = u'0.2.0'
+version = u'0.2.1'
+release = u'0.2.1'
 
 language = None
 
