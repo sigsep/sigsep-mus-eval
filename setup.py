@@ -6,7 +6,7 @@ if __name__ == "__main__":
         name='museval',
 
         # Version
-        version="0.2.1",
+        version="0.3.0",
 
         # Description
         description='Evaluation tools for the SIGSEP MUS database',
@@ -38,7 +38,8 @@ if __name__ == "__main__":
             'six',
             'simplejson',
             'soundfile',
-            'jsonschema'
+            'jsonschema',
+            'pandas'
         ],
 
         package_data={

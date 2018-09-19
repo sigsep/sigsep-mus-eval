@@ -11,6 +11,8 @@ from jsonschema import validate
 import functools
 import musdb
 import museval
+import pandas as pd
+from pandas.io.json import json_normalize
 
 
 class EvalStore(object):
@@ -286,6 +288,31 @@ def eval_mus_dir(
     )
     # evaluate tracks
     dataset.run(run_fun, estimates_dir=None, tracks=tracks, *args, **kwargs)
+
+
+def to_df(eval, track):
+    json_string = json.loads(eval.json)
+    df = json_normalize(
+        json_string['targets'],
+        ['frames'],
+        ['name']
+    )
+    df = pd.melt(
+        pd.concat(
+            [
+                df.drop(['metrics'], axis=1),
+                df['metrics'].apply(pd.Series)
+            ],
+            axis=1
+        ),
+        var_name='metric',
+        value_name='score',
+        id_vars=['time', 'name'],
+        value_vars=['SDR', 'SAR', 'ISR', 'SIR']
+    )
+    df['track'] = track.name
+    df = df.rename(index=str, columns={"name": "target"})
+    return df
 
 
 def eval_mus_track(
