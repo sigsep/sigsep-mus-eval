@@ -11,8 +11,6 @@ from jsonschema import validate
 import functools
 import musdb
 import museval
-import pandas as pd
-from pandas.io.json import json_normalize
 
 
 class EvalStore(object):
@@ -291,6 +289,9 @@ def eval_mus_dir(
 
 
 def to_df(eval, track):
+    import pandas as pd
+    from pandas.io.json import json_normalize
+
     json_string = json.loads(eval.json)
     df = json_normalize(
         json_string['targets'],

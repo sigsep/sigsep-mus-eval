@@ -38,8 +38,7 @@ if __name__ == "__main__":
             'six',
             'simplejson',
             'soundfile',
-            'jsonschema',
-            'pandas'
+            'jsonschema'
         ],
 
         package_data={
