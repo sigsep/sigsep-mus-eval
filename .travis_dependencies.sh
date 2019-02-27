@@ -35,7 +35,6 @@ if [ ! -d "$src" ]; then
 
         conda install -c conda-forge ffmpeg==3.4
 
-        pip install python-coveralls
         pip install mock
         pip install coverage
 
