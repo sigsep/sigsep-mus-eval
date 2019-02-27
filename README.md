@@ -1,7 +1,6 @@
 # museval
 
 [![Build Status](https://travis-ci.org/sigsep/sigsep-mus-eval.svg?branch=master)](https://travis-ci.org/sigsep/sigsep-mus-eval)
-[![Coverage Status](https://coveralls.io/repos/github/sigsep/sigsep-mus-eval/badge.svg?branch=master)](https://coveralls.io/github/sigsep/sigsep-mus-eval?branch=master)
 [![Latest Version](https://img.shields.io/pypi/v/museval.svg)](https://pypi.python.org/pypi/museval)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/museval.svg)](https://pypi.python.org/pypi/museval)
 
