@@ -48,8 +48,7 @@ if __name__ == "__main__":
         extras_require={
             'tests': [
                 'pytest',
-                'pytest-cov',
-                'pytest-pep8',
+                'pytest-pep8'
             ],
             'docs': [
                 'sphinx',
@@ -60,8 +59,7 @@ if __name__ == "__main__":
 
         tests_require=[
             'pytest',
-            'pytest-cov',
-            'pytest-pep8',
+            'pytest-pep8'
         ],
 
         classifiers=[
@@ -74,6 +72,7 @@ if __name__ == "__main__":
             'Programming Language :: Python :: 3.4',
             'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
             'Topic :: Multimedia :: Sound/Audio :: Analysis',
             'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis'
         ],
