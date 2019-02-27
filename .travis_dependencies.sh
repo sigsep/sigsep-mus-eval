@@ -37,7 +37,7 @@ if [ ! -d "$src" ]; then
 
         pip install python-coveralls
         pip install mock
-        pip install coverage>=4.4
+        pip install coverage
 
         source deactivate
     popd
