@@ -448,6 +448,8 @@ class Framing:
             stop = min(self.current * self.hop + self.window, self.length)
             if np.isnan(stop) or np.isinf(stop):
                 stop = self.length
+            start = int(np.floor(start))
+            stop = int(np.floor(stop))
             result = slice(start, stop)
             self.current += 1
             return result
