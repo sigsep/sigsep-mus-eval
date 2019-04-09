@@ -107,12 +107,13 @@ class EvalStore(object):
         """
         out = ""
         for t in self.scores['targets']:
-            out += t['name'].ljust(20) + "=> "
+            out += t['name'].ljust(16) + "==> "
             for metric in ['SDR', 'SIR', 'ISR', 'SAR']:
                 out += metric + ":" + \
-                    "%0.3f" % np.nanmean(
+                    "{:>8.3f}".format(
+                        np.nanmedian(
                         [np.float(f['metrics'][metric]) for f in t['frames']]
-                    ) + "dB, "
+                    )) + "  "
             out += "\n"
         return out
 
@@ -144,7 +145,7 @@ def _load_track_estimates(track, estimates_dir, output_dir):
             os.path.basename(target)
         )[0]
         try:
-            target_audio, rate = sf.read(
+            target_audio, _ = sf.read(
                 target,
                 always_2d=True
             )
