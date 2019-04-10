@@ -136,4 +136,19 @@ Please refer to our [Submission site](https://github.com/sigsep/sigsep-mus-2018)
 
 ## References
 
-LVA/ICA 2018 publication t.b.a
+A. If you use the `museval` in the context of source separation evaluation comparing a method it to other methods of [SiSEC 2018](http://sisec18.unmix.app/), please cite
+
+```
+@InProceedings{SiSEC18,
+  author="St{\"o}ter, Fabian-Robert and Liutkus, Antoine and Ito, Nobutaka",
+  title="The 2018 Signal Separation Evaluation Campaign",
+  booktitle="Latent Variable Analysis and Signal Separation:
+  14th International Conference, LVA/ICA 2018, Surrey, UK",
+  year="2018",
+  pages="293--305"
+}
+```
+
+B. if you use the dataset for any other purpose, you can cite the software release
+
+[![DOI](https://zenodo.org/badge/120666367.svg)](https://zenodo.org/badge/latestdoi/120666367)
