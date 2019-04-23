@@ -3,5 +3,5 @@ wheel==0.31.1
 numpy>=1.7
 sphinx==2.0.1
 sphinx_rtd_theme==0.4.0
-numpydoc==0.9.0
+numpydoc==0.9.1
 museval==0.3.0
