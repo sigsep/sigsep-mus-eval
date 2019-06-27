@@ -6,7 +6,7 @@ if __name__ == "__main__":
         name='museval',
 
         # Version
-        version="0.3.0",
+        version="0.3.1",
 
         # Description
         description='Evaluation tools for the SIGSEP MUS database',
@@ -32,7 +32,7 @@ if __name__ == "__main__":
         # Dependencies, this installs the entire Python scientific
         # computations stack
         install_requires=[
-            'musdb>=0.2.0',
+            'musdb==0.2.0',
             'numpy',
             'scipy',
             'six',
