@@ -87,11 +87,11 @@ class EvalStore(object):
         )
         return json_string
 
-    def means(self, metric):
+    def average_frames(self, metric, aggregation='median'):
         averages = []
         for t in self.scores['targets']:
             averages.append(
-                np.nanmean(
+                np.nanmedian(
                     [np.float(f['metrics'][metric]) for f in t['frames']]
                 )
             )
@@ -254,39 +254,32 @@ def eval_mus_dir(
     dataset,
     estimates_dir,
     output_dir=None,
-    *args, **kwargs
 ):
-    """Run musdb.run for the purpose of evaluation of musdb estimate dir
+    """Run evaluation of musdb estimate dir
 
     Parameters
     ----------
     dataset : DB(object)
-        Musdb Database object.
+        MUSDB18 Database object.
     estimates_dir : str
         Path to estimates folder.
     output_dir : str
         Output folder where evaluation json files are stored.
-    *args
-        Variable length argument list for `musdb.run()`.
-    **kwargs
-        Arbitrary keyword arguments for `musdb.run()`.
     """
     # create a new musdb instance for estimates with the same file structure
-    est = musdb.DB(root_dir=estimates_dir, is_wav=True)
-    # load all estimates track_names
-    est_tracks = est.load_mus_tracks()
+    est = musdb.DB(root=estimates_dir, is_wav=True)
     # get a list of track names
-    tracknames = [t.name for t in est_tracks]
-    # load only musdb tracks where we have estimate tracks
-    tracks = dataset.load_mus_tracks(tracknames=tracknames)
-    # wrap the estimate loader
-    run_fun = functools.partial(
-        _load_track_estimates,
-        estimates_dir=estimates_dir,
-        output_dir=output_dir
-    )
-    # evaluate tracks
-    dataset.run(run_fun, estimates_dir=None, tracks=tracks, *args, **kwargs)
+    tracks_to_be_estimated = [t.name for t in est.tracks]
+
+    for track in dataset:
+        if track.name not in tracks_to_be_estimated:
+            continue
+        _load_track_estimates(
+            track=track,
+            estimates_dir=estimates_dir,
+            output_dir=output_dir
+        )
+
 
 
 def to_df(eval, track):

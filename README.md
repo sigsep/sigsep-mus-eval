@@ -83,7 +83,6 @@ museval.eval_mus_dir(
     estimates_dir=...,  # path to estimate folder
     output_dir=...,  # set a folder to write eval json files
     subsets="Test",
-    parallel=True,
     is_wav=False
 )
 ```

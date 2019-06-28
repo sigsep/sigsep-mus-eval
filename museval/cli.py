@@ -74,13 +74,6 @@ def museval(inargs=None):
 
     parser.add_argument('-o', help='output_dir')
 
-    parser.add_argument('--cpu', type=int, help='number of cpus', default=4)
-
-    parser.add_argument(
-        '-p', help='enable multiprocessing',
-        action='store_true',
-    )
-
     parser.add_argument(
         '--musdb',
         help='path to musdb',
@@ -99,7 +92,7 @@ def museval(inargs=None):
     )
 
     args = parser.parse_args(inargs)
-    mus = musdb.DB(root_dir=args.musdb, is_wav=args.iswav)
+    mus = musdb.DB(root=args.musdb, is_wav=args.iswav)
 
     if not args.o:
         output_dir = args.estimates_dir
@@ -111,8 +104,6 @@ def museval(inargs=None):
         dataset=mus,  # instance of musdb
         estimates_dir=args.estimates_dir,  # path to estiamte folder
         output_dir=output_dir,  # set a folder to write eval json files
-        parallel=args.p,
-        cpus=args.cpu
     )
 
 

@@ -14,7 +14,7 @@ json_path = os.path.join(
 
 @pytest.fixture()
 def mus():
-    return musdb.DB(root_dir='data/MUS-STEMS-SAMPLE', is_wav=True)
+    return musdb.DB(root='data/MUS-STEMS-SAMPLE', is_wav=True)
 
 
 def test_evaluate_mus_dir(mus):
@@ -38,10 +38,8 @@ def test_estimate_and_evaluate(mus):
     with open(json_path) as json_file:
         ref = json.loads(json_file.read())
 
-    print(os.path.basename(json_path))
-    track = mus.load_mus_tracks(
-        tracknames=[os.path.splitext(os.path.basename(json_path))[0]]
-    )[0]
+    track = [track for track in mus.tracks if track.name ==
+             os.path.splitext(os.path.basename(json_path))[0]][0]
 
     np.random.seed(0)
     random_voc = np.random.random(track.audio.shape)
