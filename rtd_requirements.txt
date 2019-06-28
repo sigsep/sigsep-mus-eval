@@ -3,4 +3,4 @@ wheel
 numpy>=1.7
 sphinx
 sphinx_rtd_theme
-numpydoc
+numpydoc==0.9.1
