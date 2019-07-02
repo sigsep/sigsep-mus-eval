@@ -14,7 +14,7 @@ if __name__ == "__main__":
         name='museval',
 
         # Version
-        version="0.3.0",
+        version=version.version,
 
         # Description
         description='Evaluation tools for the SIGSEP MUS database',
