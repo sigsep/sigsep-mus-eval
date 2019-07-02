@@ -1,4 +1,3 @@
-from __future__ import division
 from . import metrics
 import simplejson as json
 import os.path as op
@@ -87,7 +86,7 @@ class EvalStore(object):
         )
         return json_string
 
-    def average_frames(self, metric, aggregation='median'):
+    def average_frames(self, metric):
         averages = []
         for t in self.scores['targets']:
             averages.append(
