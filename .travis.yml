@@ -1,16 +1,16 @@
 language: python
 
-cache: pip
+dist: xenial
+sudo: true
+
+cache:
+  directories:
+    - $HOME/env
 
 matrix:
   include:
-    - python: 2.7
-    - python: 3.4
-    - python: 3.5
     - python: 3.6
     - python: 3.7
-      dist: xenial
-      sudo: true
 
 before_install:
     - bash .travis_dependencies.sh
@@ -25,8 +25,7 @@ install:
 
 script:
     - py.test tests
-    - python setup.py build_sphinx
-    - python setup.py egg_info -b.dev sdist --formats gztar
+    - cd docs; make html; touch html/.nojekyll
 
 after_success:
     - coveralls
