@@ -4,7 +4,6 @@
 [![Latest Version](https://img.shields.io/pypi/v/museval.svg)](https://pypi.python.org/pypi/museval)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/museval.svg)](https://pypi.python.org/pypi/museval)
 
-
 A python package to evaluate source separation results using the [MUSDB18](https://sigsep.github.io/musdb) dataset. This package is part of the [MUS task](https://sisec.inria.fr/home/2018-professionally-produced-music-recordings/) of the [Signal Separation Evaluation Campaign (SISEC)](https://sisec.inria.fr/). Using this package is mandatory for submitting results to SiSEC as it includes the reference implementation of the new BSSEval version 4.
 
 ### BSSEval v4
@@ -25,7 +24,7 @@ pip install museval
 
 ## Usage
 
-The purpose of this package is to evaluate source separation results and write out standardized `json` files that can easiliy be parsed by the SiSEC submission system. Furthermore we want to encourage users to use this evaluation output format as the standardized way to share source separation results for processed tracks. We provide two different ways to use `museval` in conjunction with your source separation results.
+The purpose of this package is to evaluate source separation results and write out standardized `json` files that can easily be parsed by the SiSEC submission system. Furthermore we want to encourage users to use this evaluation output format as the standardized way to share source separation results for processed tracks. We provide two different ways to use `museval` in conjunction with your source separation results.
 
 ### Run and Evaluate
 
@@ -59,7 +58,9 @@ def estimate_and_evaluate(track):
     return estimates
 
 # your usual way to run musdb
-musdb.DB().run()
+mus = musdb.DB()
+[estimate_and_evaluate(track) for track in mus]
+
 ```
 
 - Make sure `output_dir` is set. `museval` will recreate the `musdb` file structure in that folder and write the evaluation results to this folder. __This whole folder should be submitted for your SiSEC contribution__.
@@ -91,13 +92,13 @@ museval.eval_mus_dir(
 
 #### Commandline tool
 
-We provide a commandline wrapper of `eval_mus_dir` by calling the `museval` commandline tool. The following example is equivalent to the code example above:
+We provide a command line wrapper of `eval_mus_dir` by calling the `museval` command line tool. The following example is equivalent to the code example above:
 
 ```
 museval -p --musdb path/to/musdb -o path/to/output_dir path/to/estimate_dir
 ```
 
-:bulb: you use the `--iswav` flag to use the decoded wav musdb dataset.
+:bulb: you use the `--iswav` flag to use the decoded wav _musdb_ dataset.
 
 ### Using Docker for Evaluation
 
@@ -127,7 +128,7 @@ docker run --rm -v estimatesdir:/est -v musdbdir:/mus -v outputdir:/out faroit/s
 
 In the line above, replace `estimatesdir`, `musdbdir` and `outputdir` by the absolute paths for your setting.  Please note that docker requires absolute paths so you have to rely on your command line environment to convert relative paths to absolute paths (e.g. by using `$HOME/` on Unix).
 
-:warning: `museval` requires a significant amount of memory for the evaluation. Evaluating all five targets for musdb18 may require more than 4GB of RAM. If you use multiprocessing by using the `-p` switch in `museval`, this results in 16GB of RAM. It is recommended to adjust your Docker preferences, because the docker container might just quit if its out of memory.
+:warning: `museval` requires a significant amount of memory for the evaluation. Evaluating all five targets for _MUSDB18_ may require more than 4GB of RAM. If you use multiprocessing by using the `-p` switch in `museval`, this results in 16GB of RAM. It is recommended to adjust your Docker preferences, because the docker container might just quit if its out of memory.
 
 ## Submission
 

@@ -1,6 +1,6 @@
 import sys
 import argparse
-from . import util
+from . import version
 from . import eval_mus_dir, eval_dir
 import musdb
 
@@ -38,7 +38,7 @@ def bsseval(inargs=None):
     parser.add_argument(
         '--version', '-v',
         action='version',
-        version='%%(prog)s %s' % util.__version__
+        version='%%(prog)s %s' % version.version
     )
 
     args = parser.parse_args(inargs)
@@ -88,7 +88,7 @@ def museval(inargs=None):
     parser.add_argument(
         '--version', '-v',
         action='version',
-        version='%%(prog)s %s' % util.__version__
+        version='%%(prog)s %s' % version.version
     )
 
     args = parser.parse_args(inargs)
