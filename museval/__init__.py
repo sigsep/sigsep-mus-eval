@@ -365,6 +365,14 @@ def eval_mus_track(
                 target_name=target,
                 values=values
             )
+    elif not has_acc:
+        import warnings
+
+        warnings.warn(
+            UserWarning(
+                "Incorrect usage of BASS : at least two estimates must be provided. Target score will be empty."
+            )
+        )
 
     # add vocal accompaniment targets later
     if has_acc:

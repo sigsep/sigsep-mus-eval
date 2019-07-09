@@ -79,3 +79,25 @@ def test_estimate_and_evaluate(mus):
             )
 
             assert np.allclose(ref, est)
+
+
+def test_one_estimate(mus):
+    track = mus.load_mus_tracks(
+        tracknames=[os.path.splitext(os.path.basename(json_path))[0]]
+    )[0]
+
+    np.random.seed(0)
+    random_voc = np.random.random(track.audio.shape)
+
+    estimates = {
+        'vocals': random_voc
+    }
+
+    with pytest.warns(UserWarning):
+        scores = museval.eval_mus_track(
+            track, estimates
+        )
+
+    scores = json.loads(scores.json)
+
+    assert len(scores['targets']) == 0
