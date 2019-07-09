@@ -10,6 +10,7 @@ from jsonschema import validate
 import functools
 import musdb
 import museval
+import warnings
 
 
 class EvalStore(object):
@@ -396,6 +397,12 @@ def eval_mus_track(
                 target_name=target,
                 values=values
             )
+    elif not has_acc:
+        warnings.warn(
+            UserWarning(
+                "Incorrect usage of BSSeval : at least two estimates must be provided. Target score will be empty."
+            )
+        )
 
     # add vocal accompaniment targets later
     if has_acc:
