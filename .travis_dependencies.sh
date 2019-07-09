@@ -33,10 +33,10 @@ if [ ! -d "$src" ]; then
 
         source activate $ENV_NAME
 
-        conda install -c conda-forge ffmpeg==3.4
+        conda install -c conda-forge ffmpeg==4.1
 
-        pip install python-coveralls
-        pip install mock
+        pip install python-coveralls pytest-cov mock
+        pip install coverage>=4.4
 
         source deactivate
     popd

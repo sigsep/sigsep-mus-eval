@@ -26,8 +26,10 @@ Here is an example for such a function separating the mixture into a
     output_dir = ...
     estimates_dir = ...
 
-    def estimate_and_evaluate(track):
+    for track in musdb:
         # generate your estimates
+        # ...
+
         estimates = {
             'vocals': track.audio,
             'accompaniment': track.audio
@@ -41,16 +43,10 @@ Here is an example for such a function separating the mixture into a
         # print nicely formatted mean scores
         print(scores)
 
-        # return estimates as usual
-        return estimates
-
-    # your usual way to run musdb
-    musdb.DB().run()
 
 -  Make sure ``output_dir`` is set. ``museval`` will recreate the
    ``musdb`` file structure in that folder and write the evaluation
-   results to this folder. **This whole folder should be submitted for
-   your SiSEC contribution**.
+   results to this folder.
 
 Evaluate later
 ~~~~~~~~~~~~~~
@@ -60,10 +56,7 @@ MATLAB), we provide you with an easy-to-use function to process
 evaluation results afterwards.
 
 Simply use the ``museval.eval_mus_dir`` to evaluate your
-``estimates_dir`` and write the results into the ``output_dir``. For
-convenience, the ``eval_mus_dir`` function accepts all parameters of the
-``musdb.run()``. That way e.g. multiprocessing can easily be enabled by
-setting ``parallel=True``:
+``estimates_dir`` and write the results into the ``output_dir``. 
 
 .. code:: python
 
@@ -79,7 +72,6 @@ setting ``parallel=True``:
         estimates_dir=...,  # path to estimate folder
         output_dir=...,  # set a folder to write eval json files
         subsets="Test",
-        parallel=True
     )
 
 Commandline tool

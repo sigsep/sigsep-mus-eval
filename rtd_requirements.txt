@@ -1,6 +1,7 @@
 pip >= 8.0.0
-wheel
+wheel==0.33.4
 numpy>=1.7
-sphinx
-sphinx_rtd_theme
-numpydoc
+sphinx==2.0.1
+sphinx_rtd_theme==0.4.3
+numpydoc==0.9.1
+museval==0.3.0

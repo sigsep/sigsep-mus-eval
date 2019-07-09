@@ -1,4 +1,3 @@
-from __future__ import division
 from . import metrics
 import simplejson as json
 import os.path as op
@@ -11,6 +10,7 @@ from jsonschema import validate
 import functools
 import musdb
 import museval
+import warnings
 
 
 class EvalStore(object):
@@ -87,6 +87,16 @@ class EvalStore(object):
         )
         return json_string
 
+    def average_frames(self, metric):
+        averages = []
+        for t in self.scores['targets']:
+            averages.append(
+                np.nanmedian(
+                    [np.float(f['metrics'][metric]) for f in t['frames']]
+                )
+            )
+        return averages
+
     def __repr__(self):
         """Print the mean values instead of all frames
 
@@ -97,12 +107,13 @@ class EvalStore(object):
         """
         out = ""
         for t in self.scores['targets']:
-            out += t['name'].ljust(20) + "=> "
+            out += t['name'].ljust(16) + "==> "
             for metric in ['SDR', 'SIR', 'ISR', 'SAR']:
                 out += metric + ":" + \
-                    "%0.3f" % np.nanmean(
+                    "{:>8.3f}".format(
+                        np.nanmedian(
                         [np.float(f['metrics'][metric]) for f in t['frames']]
-                    ) + "dB, "
+                    )) + "  "
             out += "\n"
         return out
 
@@ -134,7 +145,7 @@ def _load_track_estimates(track, estimates_dir, output_dir):
             os.path.basename(target)
         )[0]
         try:
-            target_audio, rate = sf.read(
+            target_audio, _ = sf.read(
                 target,
                 always_2d=True
             )
@@ -243,39 +254,60 @@ def eval_mus_dir(
     dataset,
     estimates_dir,
     output_dir=None,
-    *args, **kwargs
 ):
-    """Run musdb.run for the purpose of evaluation of musdb estimate dir
+    """Run evaluation of musdb estimate dir
 
     Parameters
     ----------
     dataset : DB(object)
-        Musdb Database object.
+        MUSDB18 Database object.
     estimates_dir : str
         Path to estimates folder.
     output_dir : str
         Output folder where evaluation json files are stored.
-    *args
-        Variable length argument list for `musdb.run()`.
-    **kwargs
-        Arbitrary keyword arguments for `musdb.run()`.
     """
     # create a new musdb instance for estimates with the same file structure
-    est = musdb.DB(root_dir=estimates_dir, is_wav=True)
-    # load all estimates track_names
-    est_tracks = est.load_mus_tracks()
+    est = musdb.DB(root=estimates_dir, is_wav=True)
     # get a list of track names
-    tracknames = [t.name for t in est_tracks]
-    # load only musdb tracks where we have estimate tracks
-    tracks = dataset.load_mus_tracks(tracknames=tracknames)
-    # wrap the estimate loader
-    run_fun = functools.partial(
-        _load_track_estimates,
-        estimates_dir=estimates_dir,
-        output_dir=output_dir
+    tracks_to_be_estimated = [t.name for t in est.tracks]
+
+    for track in dataset:
+        if track.name not in tracks_to_be_estimated:
+            continue
+        _load_track_estimates(
+            track=track,
+            estimates_dir=estimates_dir,
+            output_dir=output_dir
+        )
+
+
+
+def to_df(eval, track):
+    import pandas as pd
+    from pandas.io.json import json_normalize
+
+    json_string = json.loads(eval.json)
+    df = json_normalize(
+        json_string['targets'],
+        ['frames'],
+        ['name']
     )
-    # evaluate tracks
-    dataset.run(run_fun, estimates_dir=None, tracks=tracks, *args, **kwargs)
+    df = pd.melt(
+        pd.concat(
+            [
+                df.drop(['metrics'], axis=1),
+                df['metrics'].apply(pd.Series)
+            ],
+            axis=1
+        ),
+        var_name='metric',
+        value_name='score',
+        id_vars=['time', 'name'],
+        value_vars=['SDR', 'SAR', 'ISR', 'SIR']
+    )
+    df['track'] = track.name
+    df = df.rename(index=str, columns={"name": "target"})
+    return df
 
 
 def eval_mus_track(
@@ -366,11 +398,9 @@ def eval_mus_track(
                 values=values
             )
     elif not has_acc:
-        import warnings
-
         warnings.warn(
             UserWarning(
-                "Incorrect usage of BASS : at least two estimates must be provided. Target score will be empty."
+                "Incorrect usage of BSSeval : at least two estimates must be provided. Target score will be empty."
             )
         )
 
