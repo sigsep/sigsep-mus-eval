@@ -14,7 +14,7 @@ import warnings
 import pandas as pd
 from pandas.io.json import json_normalize
 from .aggregate import MethodsStore, EvalStore, json2df
-
+from .version import version
 
 
 class TrackStore(object):
@@ -51,7 +51,8 @@ class TrackStore(object):
         with open(schema_path) as json_file:
             self.schema = json.load(json_file)
         self.scores = {
-            'targets': []
+            'targets': [],
+            'museval_version': version
         }
 
     def add_target(self, target_name, values):
@@ -139,6 +140,10 @@ class TrackStore(object):
             return np.nan
         else:
             return D(D(number).quantize(D(precision)))
+
+    def save(self, path):
+        with open(path, 'w+') as f:
+            f.write(self.json)
 
 
 def _load_track_estimates(track, estimates_dir, output_dir, ext='wav'):

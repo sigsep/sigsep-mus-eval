@@ -1,6 +1,9 @@
 {
   "type": "object",
   "properties": {
+    "museval_version": {
+      "type": "string"
+    },
     "targets": {
       "type": "array",
       "items": {
