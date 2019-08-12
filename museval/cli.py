@@ -1,6 +1,5 @@
 import sys
 import argparse
-from . import version
 from . import eval_mus_dir, eval_dir
 import musdb
 
@@ -83,12 +82,6 @@ def museval(inargs=None):
     parser.add_argument(
         '--is-wav', help='Read musdb wav instead of stems',
         action='store_true',
-    )
-
-    parser.add_argument(
-        '--version', '-v',
-        action='version',
-        version='%%(prog)s %s' % version.version
     )
 
     args = parser.parse_args(inargs)
