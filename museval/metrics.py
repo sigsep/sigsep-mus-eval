@@ -52,7 +52,6 @@ from scipy.signal import fftconvolve
 import itertools
 import collections
 import warnings
-from . import util
 
 # The maximum allowable number of sources (prevents insane computational load)
 MAX_SOURCES = 100
