@@ -31,7 +31,7 @@ class MethodsStore(object):
         df_to_add['method'] = method_name
         self.df = self.df.append(df_to_add, ignore_index=True)
     
-    def aggregate_score(self, metric, target):
+    def aggregate_score(self):
         df_aggregated_frames_gb = self.df.groupby(
             ['method', 'track', 'target', 'metric'])
 
