@@ -6,7 +6,5 @@ museval modules
     :undoc-members:
     :show-inheritance:
     :inherited-members:
-.. autoclass: museval.EvalStore
-    :members:
 
-   self
+    self

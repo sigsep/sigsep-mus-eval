@@ -23,7 +23,7 @@ if [ ! -d "$src" ]; then
     pushd $HOME/env
 
         # Download miniconda packages
-        wget http://repo.continuum.io/miniconda/Miniconda-3.16.0-Linux-x86_64.sh -O miniconda.sh;
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 
         # Install both environments
         bash miniconda.sh -b -p $src
@@ -33,10 +33,10 @@ if [ ! -d "$src" ]; then
 
         source activate $ENV_NAME
 
-        conda install -c conda-forge ffmpeg==3.4
-
-        pip install python-coveralls
-        pip install mock
+        conda install -c conda-forge ffmpeg==4.1
+        pip install cffi
+        pip install python-coveralls pytest-cov mock
+        pip install coverage>=4.4
 
         source deactivate
     popd

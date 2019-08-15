@@ -8,11 +8,19 @@ of the `Signal Separation Evaluation Campaign
 
 
 Contents:
+-----------------
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    usage
+
+API documentation
+-----------------
+
+.. toctree::
+   :maxdepth: 2
+
    museval
    museval.metrics
 

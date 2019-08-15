@@ -1,4 +1,3 @@
-from __future__ import division
 from . import metrics
 import simplejson as json
 import os.path as op
@@ -11,9 +10,14 @@ from jsonschema import validate
 import functools
 import musdb
 import museval
+import warnings
+import pandas as pd
+from pandas.io.json import json_normalize
+from .aggregate import MethodsStore, EvalStore, json2df
+from .version import _version
 
 
-class EvalStore(object):
+class TrackStore(object):
     """
     Evaluation Track Data Storage Object
 
@@ -27,19 +31,28 @@ class EvalStore(object):
         Track sample rate
     scores : Dict
         Nested Dictionary of all scores
+    frames_agg : function or string
+        aggregation function for frames, defaults to `'median' = `np.nanmedian`
     """
-    def __init__(self, win=1, hop=1):
-        super(EvalStore, self).__init__()
+    def __init__(self, win=1, hop=1, frames_agg='median', track_name=''):
+        super(TrackStore, self).__init__()
         self.win = win
         self.hop = hop
-
+        if frames_agg == 'median':
+            self.frames_agg = np.nanmedian
+        elif frames_agg == 'mean':
+            self.frames_agg = np.nanmean
+        else:
+            self.frames_agg = frames_agg
+        self.track_name = track_name
         schema_path = os.path.join(
             museval.__path__[0], 'musdb.schema.json'
         )
         with open(schema_path) as json_file:
             self.schema = json.load(json_file)
         self.scores = {
-            'targets': []
+            'targets': [],
+            'museval_version': _version
         }
 
     def add_target(self, target_name, values):
@@ -56,7 +69,7 @@ class EvalStore(object):
             'name': target_name,
             'frames': []
         }
-        for i, v in enumerate(values['SDR']):
+        for i, _ in enumerate(values['SDR']):
             frame_data = {
                 'time': i * self.hop,
                 'duration': self.win,
@@ -73,7 +86,7 @@ class EvalStore(object):
 
     @property
     def json(self):
-        """add target to scores Dictionary
+        """return track scores in json format
 
         Returns
         ----------
@@ -87,22 +100,33 @@ class EvalStore(object):
         )
         return json_string
 
+    @property
+    def df(self):
+        """return track scores as pandas dataframe
+
+        Returns
+        ----------
+        df : DataFrame
+            pandas dataframe object of track scores
+        """
+        return json2df(self.json, self.track_name)
+
     def __repr__(self):
-        """Print the mean values instead of all frames
+        """Print the frames_aggregated values instead of all frames
 
         Returns
         ----------
         str
-            mean values of all target metrics
+            frames_aggreagted values of all target metrics
         """
         out = ""
         for t in self.scores['targets']:
-            out += t['name'].ljust(20) + "=> "
+            out += t['name'].ljust(16) + "==> "
             for metric in ['SDR', 'SIR', 'ISR', 'SAR']:
                 out += metric + ":" + \
-                    "%0.3f" % np.nanmean(
-                        [np.float(f['metrics'][metric]) for f in t['frames']]
-                    ) + "dB, "
+                    "{:>8.3f}".format(
+                        self.frames_agg([np.float(f['metrics'][metric]) for f in t['frames']])
+                    ) + "  "
             out += "\n"
         return out
 
@@ -117,8 +141,12 @@ class EvalStore(object):
         else:
             return D(D(number).quantize(D(precision)))
 
+    def save(self, path):
+        with open(path, 'w+') as f:
+            f.write(self.json)
 
-def _load_track_estimates(track, estimates_dir, output_dir):
+
+def _load_track_estimates(track, estimates_dir, output_dir, ext='wav'):
     """load estimates from disk instead of processing"""
     user_results = {}
     track_estimate_dir = os.path.join(
@@ -127,14 +155,14 @@ def _load_track_estimates(track, estimates_dir, output_dir):
         track.name
     )
     for target in glob.glob(
-        track_estimate_dir + '/*.wav'
+        track_estimate_dir + '/*.' + ext
     ):
 
         target_name = op.splitext(
             os.path.basename(target)
         )[0]
         try:
-            target_audio, rate = sf.read(
+            target_audio, _ = sf.read(
                 target,
                 always_2d=True
             )
@@ -179,14 +207,17 @@ def eval_dir(
 
     Returns
     -------
-    scores : EvalStore
+    scores : TrackStore
         scores object that holds the framewise and global evaluation scores.
     """
 
     reference = []
     estimates = []
 
-    data = EvalStore(win=win, hop=hop)
+    data = TrackStore(
+        win=win, hop=hop,
+        track_name=os.path.basename(reference_dir)
+    )
 
     global_rate = None
     reference_glob = os.path.join(reference_dir, '*.wav')
@@ -243,40 +274,34 @@ def eval_mus_dir(
     dataset,
     estimates_dir,
     output_dir=None,
-    *args, **kwargs
+    ext='wav'
 ):
-    """Run musdb.run for the purpose of evaluation of musdb estimate dir
+    """Run evaluation of musdb estimate dir
 
     Parameters
     ----------
     dataset : DB(object)
-        Musdb Database object.
+        MUSDB18 Database object.
     estimates_dir : str
         Path to estimates folder.
     output_dir : str
         Output folder where evaluation json files are stored.
-    *args
-        Variable length argument list for `musdb.run()`.
-    **kwargs
-        Arbitrary keyword arguments for `musdb.run()`.
+    ext : str
+        estimate file extension, defaults to `wav`
     """
     # create a new musdb instance for estimates with the same file structure
-    est = musdb.DB(root_dir=estimates_dir, is_wav=True)
-    # load all estimates track_names
-    est_tracks = est.load_mus_tracks()
+    est = musdb.DB(root=estimates_dir, is_wav=True)
     # get a list of track names
-    tracknames = [t.name for t in est_tracks]
-    # load only musdb tracks where we have estimate tracks
-    tracks = dataset.load_mus_tracks(tracknames=tracknames)
-    # wrap the estimate loader
-    run_fun = functools.partial(
-        _load_track_estimates,
-        estimates_dir=estimates_dir,
-        output_dir=output_dir
-    )
-    # evaluate tracks
-    dataset.run(run_fun, estimates_dir=None, tracks=tracks, *args, **kwargs)
+    tracks_to_be_estimated = [t.name for t in est.tracks]
 
+    for track in dataset:
+        if track.name not in tracks_to_be_estimated:
+            continue
+        _load_track_estimates(
+            track=track,
+            estimates_dir=estimates_dir,
+            output_dir=output_dir
+        )
 
 def eval_mus_track(
     track,
@@ -305,7 +330,7 @@ def eval_mus_track(
 
     Returns
     -------
-    scores : EvalStore
+    scores : TrackStore
         scores object that holds the framewise and global evaluation scores.
     """
 
@@ -326,7 +351,7 @@ def eval_mus_track(
         # append this target name to the list of target to evaluate
         eval_targets.append(key)
 
-    data = EvalStore(win=win, hop=hop)
+    data = TrackStore(win=win, hop=hop, track_name=track.name)
 
     # check if vocals and accompaniment is among the targets
     has_acc = all(x in eval_targets for x in ['vocals', 'accompaniment'])
@@ -365,6 +390,12 @@ def eval_mus_track(
                 target_name=target,
                 values=values
             )
+    elif not has_acc:
+        warnings.warn(
+            UserWarning(
+                "Incorrect usage of BSSeval : at least two estimates must be provided. Target score will be empty."
+            )
+        )
 
     # add vocal accompaniment targets later
     if has_acc:

@@ -6,31 +6,17 @@ import museval
 import numpy as np
 
 
+test_track = 'Music Delta - 80s Rock'
+
 json_path = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
-    'data/Music Delta - Rock.json',
+    'data/%s.json' % test_track,
 )
 
 
 @pytest.fixture()
 def mus():
-    return musdb.DB(root_dir='data/MUS-STEMS-SAMPLE', is_wav=True)
-
-
-def test_evaluate_mus_dir(mus):
-    museval.eval_mus_dir(
-        dataset=mus,  # instance of musdb
-        estimates_dir='data/EST',  # path to estimate folder
-        output_dir='data/EST_scores_mus_dir',  # set a folder to write eval
-    )
-
-
-def test_eval_dir(mus):
-    with pytest.raises(ValueError):
-        museval.eval_dir(
-            reference_dir='data/EST',  # path to estimate folder
-            estimates_dir='data/EST',  # set a folder to write eval json files
-        )
+    return musdb.DB(download=True)
 
 
 def test_estimate_and_evaluate(mus):
@@ -38,10 +24,7 @@ def test_estimate_and_evaluate(mus):
     with open(json_path) as json_file:
         ref = json.loads(json_file.read())
 
-    print(os.path.basename(json_path))
-    track = mus.load_mus_tracks(
-        tracknames=[os.path.splitext(os.path.basename(json_path))[0]]
-    )[0]
+    track = [track for track in mus.tracks if track.name == test_track][0]
 
     np.random.seed(0)
     random_voc = np.random.random(track.audio.shape)
@@ -78,4 +61,24 @@ def test_estimate_and_evaluate(mus):
                 ]
             )
 
-            assert np.allclose(ref, est)
+            assert np.allclose(ref, est, atol=1e-02)
+
+
+def test_one_estimate(mus):
+    track = [track for track in mus.tracks if track.name == test_track][0]
+
+    np.random.seed(0)
+    random_voc = np.random.random(track.audio.shape)
+
+    estimates = {
+        'vocals': random_voc
+    }
+
+    with pytest.warns(UserWarning):
+        scores = museval.eval_mus_track(
+            track, estimates
+        )
+
+    scores = json.loads(scores.json)
+
+    assert len(scores['targets']) == 0
