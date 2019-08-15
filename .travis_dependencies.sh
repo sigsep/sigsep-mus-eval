@@ -11,7 +11,7 @@ conda_create ()
     conda update -q conda
     conda config --add channels pypi
     conda info -a
-    deps='pip pytest numpy scipy coverage'
+    deps='pip pytest numpy scipy coverage pandas'
 
     conda create -q -n $ENV_NAME "python=$TRAVIS_PYTHON_VERSION" $deps
     conda update --all
@@ -34,7 +34,6 @@ if [ ! -d "$src" ]; then
         source activate $ENV_NAME
 
         conda install -c conda-forge ffmpeg==4.1
-        conda install pandas
         pip install cffi
         pip install python-coveralls pytest-cov mock
         pip install coverage>=4.4
