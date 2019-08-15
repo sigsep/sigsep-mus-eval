@@ -46,7 +46,6 @@ if __name__ == "__main__":
             'musdb>=0.3.0',
             'numpy',
             'scipy',
-            'six',
             'simplejson',
             'soundfile',
             'jsonschema',
