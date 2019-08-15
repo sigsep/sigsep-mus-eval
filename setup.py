@@ -1,4 +1,12 @@
 import setuptools
+from importlib.machinery import SourceFileLoader
+
+version = SourceFileLoader(
+    'museval.version', 'museval/version.py'
+).load_module()
+
+with open('README.md', 'r') as fdesc:
+    long_description = fdesc.read()
 
 if __name__ == "__main__":
     setuptools.setup(
@@ -6,7 +14,7 @@ if __name__ == "__main__":
         name='museval',
 
         # Version
-        version="0.2.1",
+        version=version._version,
 
         # Description
         description='Evaluation tools for the SIGSEP MUS database',
@@ -23,6 +31,9 @@ if __name__ == "__main__":
         # find_packages() finds all these automatically for you
         packages=setuptools.find_packages(),
 
+        long_description=long_description,
+        long_description_content_type='text/markdown',
+
         entry_points={
             'console_scripts': [
                 'museval=museval.cli:museval',
@@ -32,36 +43,34 @@ if __name__ == "__main__":
         # Dependencies, this installs the entire Python scientific
         # computations stack
         install_requires=[
-            'musdb==0.2.3',
+            'musdb>=0.3.0',
             'numpy',
             'scipy',
-            'six',
             'simplejson',
             'soundfile',
-            'jsonschema'
+            'jsonschema',
+            'pandas'
         ],
 
         package_data={
             'museval': ['musdb.schema.json'],
         },
 
-        extras_require={
-            'tests': [
-                'pytest',
-                'pytest-cov',
-                'pytest-pep8',
-            ],
+        extras_require={  # Optional
+            'dev': ['check-manifest'],
+            'tests': ['pytest', 'pytest-pep8'],
             'docs': [
                 'sphinx',
                 'sphinx_rtd_theme',
-                'numpydoc',
-            ]
+                'recommonmark'
+            ],
         },
 
         tests_require=[
             'pytest',
             'pytest-cov',
             'pytest-pep8',
+            'coverage>=4.4'
         ],
 
         classifiers=[
@@ -70,9 +79,8 @@ if __name__ == "__main__":
             'Environment :: Plugins',
             'Intended Audience :: Telecommunications Industry',
             'Intended Audience :: Science/Research',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
             'Topic :: Multimedia :: Sound/Audio :: Analysis',
             'Topic :: Multimedia :: Sound/Audio :: Sound Synthesis'
         ],

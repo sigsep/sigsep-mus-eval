@@ -1,28 +1,30 @@
 language: python
 
-cache: pip
+dist: xenial
+sudo: true
 
-python:
-    - 2.7
-    - 3.5
-    - 3.6
+cache:
+  directories:
+    - $HOME/env
+
+matrix:
+  include:
+    - python: 3.6
+    - python: 3.7.3
 
 before_install:
     - bash .travis_dependencies.sh
     - export PATH="$HOME/env/miniconda$TRAVIS_PYTHON_VERSION/bin:$PATH";
     - hash -r
     - source activate test-environment
-    - bash prepare_tests.sh
 
 install:
     - pip install -U pip wheel
     - pip install -e .[tests,docs]
-    - pip install python-coveralls
 
 script:
     - py.test tests
-    - python setup.py build_sphinx
-    - python setup.py egg_info -b.dev sdist --formats gztar
+    - cd docs; make html; touch html/.nojekyll
 
 after_success:
     - coveralls

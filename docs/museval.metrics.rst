@@ -6,3 +6,5 @@ BSSEval v4
     :undoc-members:
     :show-inheritance:
     :inherited-members:
+
+    self
