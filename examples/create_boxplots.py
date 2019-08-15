@@ -5,25 +5,25 @@ import museval
 
 comparisons = museval.MethodsStore()
 comparisons.add_sisec18()
-df = comparisons.aggregate_score()
+agg_df = comparisons.agg_frames_scores()
 
 sns.set()
 sns.set_context("notebook")
 
-metrics = ['SDR', 'SIR', 'SAR', 'ISR']
+metrics = ['SDR']
 selected_targets = ['vocals', 'drums', 'bass', 'other']
 oracles = [
     'IBM1', 'IBM2', 'IRM1', 'IRM2', 'MWF', 'IMSK'
 ]
 
 # Convert to Pandas Dataframes
-df['oracle'] = df.method.isin(oracles)
-df = df[df.target.isin(selected_targets)].dropna()
+agg_df['oracle'] = agg_df.method.isin(oracles)
+agg_df = agg_df[agg_df.target.isin(selected_targets)].dropna()
 
 # Get sorting keys (sorted by median of SDR:vocals)
-df_sort_by = df[
-    (df.metric == "SDR") &
-    (df.target == "vocals")
+df_sort_by = agg_df[
+    (agg_df.metric == "SDR") &
+    (agg_df.target == "vocals")
 ]
 
 methods_by_sdr = df_sort_by.score.groupby(
@@ -32,14 +32,14 @@ methods_by_sdr = df_sort_by.score.groupby(
 
 # df = df[df.target == "vocals"]
 g = sns.FacetGrid(
-    df,
+    agg_df,
     row="target",
     col="metric",
     row_order=selected_targets,
     col_order=metrics,
     size=4,
     sharex=False,
-    aspect=2
+    aspect=3
 )
 g = (g.map(
     sns.boxplot,
@@ -56,7 +56,6 @@ g = (g.map(
 g.fig.tight_layout()
 plt.subplots_adjust(hspace=0.2, wspace=0.1)
 g.fig.savefig(
-    "boxplot.png",
+    "boxplot.pdf",
     bbox_inches='tight',
-    # dpi=100
 )

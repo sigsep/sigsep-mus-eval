@@ -31,24 +31,27 @@ class MethodsStore(object):
         df_to_add['method'] = method_name
         self.df = self.df.append(df_to_add, ignore_index=True)
     
-    def aggregate_score(self):
+    def agg_frames_scores(self):
         df_aggregated_frames_gb = self.df.groupby(
-            ['method', 'track', 'target', 'metric'])
+            ['method', 'track', 'target', 'metric'])['score']
 
         if self.frames_agg == 'median':
             df_aggregated_frames = df_aggregated_frames_gb.median().reset_index()
         elif self.frames_agg == 'mean':
             df_aggregated_frames = df_aggregated_frames_gb.mean().reset_index()
 
+        return df_aggregated_frames
+
+    def agg_frames_tracks_scores(self):
+        df_aggregated_frames = self.agg_frames_scores()
         if self.tracks_agg == 'median':
             df_aggregated_tracks = df_aggregated_frames.groupby(
-                ['method', 'target', 'metric']).median()['score'].unstack()
+                ['method', 'target', 'metric'])['score'].median().reset_index()
         elif self.tracks_agg == 'mean':
             df_aggregated_tracks = df_aggregated_frames.groupby(
-                ['method', 'target', 'metric']).mean()['score'].unstack()
-        
-        return df_aggregated_tracks
+                ['method', 'target', 'metric'])['score'].mean().reset_index()
 
+        return df_aggregated_tracks
 
 class EvalStore(object):
     def __init__(self, frames_agg='median', tracks_agg='median', tracks=None):
@@ -62,23 +65,27 @@ class EvalStore(object):
     def add_track(self, track):
         self.df = self.df.append(track.df, ignore_index=True)
 
-    def aggregate_score(self, metric, target):
+    def agg_frames_scores(self):
         df_aggregated_frames_gb = self.df.groupby(
-            ['track', 'target', 'metric'])
+            ['track', 'target', 'metric'])['score']
 
         if self.frames_agg == 'median':
             df_aggregated_frames = df_aggregated_frames_gb.median().reset_index()
         elif self.frames_agg == 'mean':
             df_aggregated_frames = df_aggregated_frames_gb.mean().reset_index()
 
+        return df_aggregated_frames
+
+    def agg_frames_tracks_scores(self):
+        df_aggregated_frames = self.agg_frames_scores()
         if self.tracks_agg == 'median':
             df_aggregated_tracks = df_aggregated_frames.groupby(
-                ['target', 'metric']).median()['score'].unstack()
+                ['target', 'metric']).median().reset_index()
         elif self.tracks_agg == 'mean':
             df_aggregated_tracks = df_aggregated_frames.groupby(
-                ['target', 'metric']).mean()['score'].unstack()
+                ['target', 'metric']).mean().reset_index()
 
-        return df_aggregated_tracks[metric][target]
+        return df_aggregated_tracks
 
     def load(self, path):
         self.df = pd.read_pickle(path)
@@ -96,7 +103,7 @@ class EvalStore(object):
             for metric in ['SDR', 'SIR', 'ISR', 'SAR']:
                 out += metric + ":" + \
                     "{:>8.3f}".format(
-                        self.aggregate_score(metric, target)) + "  "
+                        self.agg_frames_tracks_scores().unstack()[metric][target]) + "  "
             out += "\n"
         return out
 
