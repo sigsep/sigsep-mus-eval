@@ -14,7 +14,7 @@ import warnings
 import pandas as pd
 from pandas.io.json import json_normalize
 from .aggregate import MethodsStore, EvalStore, json2df
-from .version import version
+from .version import _version
 
 
 class TrackStore(object):
@@ -52,7 +52,7 @@ class TrackStore(object):
             self.schema = json.load(json_file)
         self.scores = {
             'targets': [],
-            'museval_version': version
+            'museval_version': _version
         }
 
     def add_target(self, target_name, values):
