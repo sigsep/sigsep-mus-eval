@@ -1,33 +1,29 @@
 import musdb
 import museval
 
-"""
-Hook in the the user_function and do evaluation in the `run` loop
-"""
+# initiate musdb
+mus = musdb.DB(download=True)
 
-output_dir = ...
-estimates_dir = ...
+# set up museval store
+results = museval.EvalStore()
 
-
-def estimate_and_evaluate(track):
+for track in mus[:3]:
+    print(track)
     # return any number of targets
     estimates = {
         'vocals': track.audio,
         'accompaniment': track.audio
     }
 
-    museval.eval_mus_track(
-        track, estimates, output_dir=output_dir
-    )
+    track_scores = museval.eval_mus_track(track, estimates)
+    print(track_scores)
+    results.add_track(track_scores)
 
-    return estimates
+print(results)
+results.save('SUP.pandas')
+comparison = museval.MethodsStore()
+comparison.add_method(results, method_name="SUP")
+comparison.add_sisec18()
+print(comparison.aggregate_score())
 
 
-# initiate musdb
-mus = musdb.DB()
-
-mus.run(
-    estimate_and_evaluate,
-    estimates_dir=estimates_dir,
-    subsets="test"
-)
