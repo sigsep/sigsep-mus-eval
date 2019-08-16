@@ -7,9 +7,9 @@ import argparse
 from urllib.request import urlopen
 
 
-class MethodsStore(object):
+class MethodStore(object):
     def __init__(self, frames_agg='median', tracks_agg='median', tracks=None):
-        super(MethodsStore, self).__init__()
+        super(MethodStore, self).__init__()
         self.df = pd.DataFrame()
         self.frames_agg = frames_agg
         self.tracks_agg = tracks_agg
@@ -21,14 +21,21 @@ class MethodsStore(object):
         df_sisec = pd.read_pickle(raw_data, compression=None)
         self.df = self.df.append(df_sisec, ignore_index=True)
 
-    def add_umx(self):
-        raw_data = urlopen('.pandas')
-        df_sisec = pd.read_pickle(raw_data, compression=None)
-        self.df = self.df.append(df_sisec, ignore_index=True)
+    def add_eval_dir(self, path):
+        method = EvalStore()
+        p = Path(path)
+        if p.exists():
+            json_paths = p.glob('test/**/*.json')
+            for json_path in json_paths:
+                with open(json_path) as json_file:
+                    json_string = json.loads(json_file.read())
+                    track_df = json2df(json_string, json_path.stem)
+                    method.add_track(track_df)
+        self.add_evalstore(method, p.stem)
 
-    def add_method(self, method, method_name='foo'):
+    def add_evalstore(self, method, name):
         df_to_add = method.df
-        df_to_add['method'] = method_name
+        df_to_add['method'] = name
         self.df = self.df.append(df_to_add, ignore_index=True)
     
     def agg_frames_scores(self):
@@ -52,6 +59,12 @@ class MethodsStore(object):
                 ['method', 'target', 'metric'])['score'].mean().reset_index()
 
         return df_aggregated_tracks
+
+    def load(self, path):
+        self.df = pd.read_pickle(path)
+
+    def save(self, path):
+        self.df.to_pickle(path)
 
 class EvalStore(object):
     def __init__(self, frames_agg='median', tracks_agg='median', tracks=None):

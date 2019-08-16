@@ -1,4 +1,3 @@
-from . import metrics
 import simplejson as json
 import os.path as op
 import numpy as np
@@ -13,28 +12,30 @@ import museval
 import warnings
 import pandas as pd
 from pandas.io.json import json_normalize
-from .aggregate import MethodsStore, EvalStore, json2df
-from .version import _version
+from . aggregate import MethodsStore, EvalStore, json2df
+from . import metrics
+from . version import _version
 
 
 class TrackStore(object):
     """
-    Evaluation Track Data Storage Object
+    Evaluation Storage that holds the scores for all frames of one track
 
     Attributes
     ----------
+    track_name : string
+        name of track, required.
     win : float
         evaluation window duration in seconds, default to 1s
     hop : float
         hop length in seconds, defaults to 1s
-    rate : int
-        Track sample rate
     scores : Dict
         Nested Dictionary of all scores
     frames_agg : function or string
         aggregation function for frames, defaults to `'median' = `np.nanmedian`
     """
-    def __init__(self, win=1, hop=1, frames_agg='median', track_name=''):
+
+    def __init__(self, track_name, win=1, hop=1, frames_agg='median'):
         super(TrackStore, self).__init__()
         self.win = win
         self.hop = hop
@@ -56,7 +57,7 @@ class TrackStore(object):
         }
 
     def add_target(self, target_name, values):
-        """add target to scores Dictionary
+        """add scores of target to the data store
 
         Parameters
         ----------
@@ -86,7 +87,7 @@ class TrackStore(object):
 
     @property
     def json(self):
-        """return track scores in json format
+        """formats the track scores as json string
 
         Returns
         ----------
@@ -142,6 +143,7 @@ class TrackStore(object):
             return D(D(number).quantize(D(precision)))
 
     def save(self, path):
+        """Saved the track scores as json format"""
         with open(path, 'w+') as f:
             f.write(self.json)
 
