@@ -67,7 +67,7 @@ mus = musdb.DB()
 
 ### Evaluate later
 
-If you have already computed your estimates (maybe through the use of MATLAB), we provide you with an easy-to-use function to process evaluation results afterwards.
+If you have already computed your estimates, we provide you with an easy-to-use function to process evaluation results afterwards.
 
 Simply use the `museval.eval_mus_dir` to evaluate your `estimates_dir` and write the results into the `output_dir`. For convenience, the `eval_mus_dir` function accepts all parameters of the `musdb.run()`. That way e.g. multiprocessing can easily be enabled by setting `parallel=True`:
 
@@ -89,6 +89,29 @@ museval.eval_mus_dir(
 ```
 
 :bulb: When evaluating later, please make sure you use the same environment used for separation or use the [decoded wav dataset](https://github.com/sigsep/sigsep-mus-io). This is important since the reference sources are loaded from the stems on the fly and certain FFMPEG version produce different zero-padding. We tested several different machines and ffmpeg version and did not run into any problems, but we cannot guarantee that the decoded outputs of two different ffmpeg versions are identical and would not affect the bsseval scores. E.g. when silence > 512 samples would be added in the beginning of a target source.
+
+### Aggregate and Analyze Scores
+
+Scores for each track can also be aggregated in a pandas DataFrame for easier analysis or the creation of boxplots.
+To aggregate multiple tracks in a DataFrame, create `museval.EvalStore()` object and add the track scores successively.
+
+```python
+results = museval.EvalStore(frames_agg='median', tracks_agg='median')
+for track in tracks:
+    # ...
+    results.add_track(museval.eval_mus_track(track, estimates))
+```
+
+When all tracks have been added, the aggregated scores can be shown using `print(results)` and results may be saved as a pandas DataFrame `results.save('my_method.pandas')`.
+
+To compare multiple methods, create a `museval.MethodStore()` object add the results
+
+```python
+methods = museval.MethodStore()
+methods.add_evalstore(results, name="XZY")
+```
+
+To compare against participants from [SiSEC MUS 2018](https://github.com/sigsep/sigsep-mus-2018), we provide a convenient method to load the existing scores on demand using `methods.add_sisec18()`. For the creation of plots and statistical significance tests we refer to our [list of examples](/examples).
 
 #### Commandline tool
 
