@@ -16,6 +16,7 @@ if __name__ == '__main__':
 
 
     args = parser.parse_args()
-    methods = museval.EvalStore(frames_agg="median", tracks_agg="median")
-    methods.add_eval_dir(args.eval_path)
-    print(methods)
+    method = museval.EvalStore(frames_agg="median", tracks_agg="median")
+    method.add_eval_dir(args.eval_path)
+    print(method)
+    
