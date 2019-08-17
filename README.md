@@ -4,7 +4,7 @@
 [![Latest Version](https://img.shields.io/pypi/v/museval.svg)](https://pypi.python.org/pypi/museval)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/museval.svg)](https://pypi.python.org/pypi/museval)
 
-A python package to evaluate source separation results using the [MUSDB18](https://sigsep.github.io/musdb) dataset. This package is part of the [MUS task](https://sisec.inria.fr/home/2018-professionally-produced-music-recordings/) of the [Signal Separation Evaluation Campaign (SISEC)](https://sisec.inria.fr/). Using this package is mandatory for submitting results to SiSEC as it includes the reference implementation of the new BSSEval version 4.
+A python package to evaluate source separation results using the [MUSDB18](https://sigsep.github.io/musdb) dataset. This package was part of the [MUS task](https://sisec.inria.fr/home/2018-professionally-produced-music-recordings/) of the [Signal Separation Evaluation Campaign (SISEC)](https://sisec.inria.fr/).
 
 ### BSSEval v4
 
@@ -24,23 +24,19 @@ pip install museval
 
 ## Usage
 
-The purpose of this package is to evaluate source separation results and write out standardized `json` files that can easily be parsed by the SiSEC submission system. Furthermore we want to encourage users to use this evaluation output format as the standardized way to share source separation results for processed tracks. We provide two different ways to use `museval` in conjunction with your source separation results.
+The purpose of this package is to evaluate source separation results and write out validated `json` files. We want to encourage users to use this evaluation output format as the standardized way to share source separation results. `museval` is designed to work in conjuction with the [musdb](https://github.com/sigsep/sigsep-mus-db) tools and the MUSDB18 dataset (however, `museval` can also be used without `musdb`).
 
-### Run and Evaluate
+### Separate MUSDB18 tracks and Evaluate on-the-fly
 
-- If you want to perform evaluation while processing your source separation results, you can hook `museval` into your `musdb` user_function:
-
+- If you want to perform evaluation while processing your source separation results, you can make use `musdb` track objects.
 Here is an example for such a function separating the mixture into a __vocals__ and __accompaniment__ track:
 
 ```python
 import musdb
 import museval
 
-output_dir = ...
-estimates_dir = ...
-
 def estimate_and_evaluate(track):
-    # generate your estimates
+    # assume mix as estimates
     estimates = {
         'vocals': track.audio,
         'accompaniment': track.audio
@@ -48,24 +44,21 @@ def estimate_and_evaluate(track):
 
     # Evaluate using museval
     scores = museval.eval_mus_track(
-        track, estimates, output_dir=output_dir
+        track, estimates, output_dir="path/to/json"
     )
 
-    # print nicely formatted mean scores
+    # print nicely formatted and aggregated scores
     print(scores)
 
-    # return estimates as usual
-    return estimates
-
-# your usual way to run musdb
 mus = musdb.DB()
-[estimate_and_evaluate(track) for track in mus]
+for track in mus:
+    estimate_and_evaluate(track)
 
 ```
 
-- Make sure `output_dir` is set. `museval` will recreate the `musdb` file structure in that folder and write the evaluation results to this folder. __This whole folder should be submitted for your SiSEC contribution__.
+Make sure `output_dir` is set. `museval` will recreate the `musdb` file structure in that folder and write the evaluation results to this folder.
 
-### Evaluate later
+### Evaluate MUSDB18 tracks later
 
 If you have already computed your estimates, we provide you with an easy-to-use function to process evaluation results afterwards.
 
@@ -83,12 +76,10 @@ museval.eval_mus_dir(
     dataset=mus,  # instance of musdb
     estimates_dir=...,  # path to estimate folder
     output_dir=...,  # set a folder to write eval json files
-    subsets="Test",
+    subsets="test",
     is_wav=False
 )
 ```
-
-:bulb: When evaluating later, please make sure you use the same environment used for separation or use the [decoded wav dataset](https://github.com/sigsep/sigsep-mus-io). This is important since the reference sources are loaded from the stems on the fly and certain FFMPEG version produce different zero-padding. We tested several different machines and ffmpeg version and did not run into any problems, but we cannot guarantee that the decoded outputs of two different ffmpeg versions are identical and would not affect the bsseval scores. E.g. when silence > 512 samples would be added in the beginning of a target source.
 
 ### Aggregate and Analyze Scores
 
@@ -152,10 +143,6 @@ docker run --rm -v estimatesdir:/est -v musdbdir:/mus -v outputdir:/out faroit/s
 In the line above, replace `estimatesdir`, `musdbdir` and `outputdir` by the absolute paths for your setting.  Please note that docker requires absolute paths so you have to rely on your command line environment to convert relative paths to absolute paths (e.g. by using `$HOME/` on Unix).
 
 :warning: `museval` requires a significant amount of memory for the evaluation. Evaluating all five targets for _MUSDB18_ may require more than 4GB of RAM. If you use multiprocessing by using the `-p` switch in `museval`, this results in 16GB of RAM. It is recommended to adjust your Docker preferences, because the docker container might just quit if its out of memory.
-
-## Submission
-
-Please refer to our [Submission site](https://github.com/sigsep/sigsep-mus-2018).
 
 ## References
 
