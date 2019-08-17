@@ -8,7 +8,7 @@ from urllib.request import urlopen
 
 
 class MethodStore(object):
-    def __init__(self, frames_agg='median', tracks_agg='median', tracks=None):
+    def __init__(self, frames_agg='median', tracks_agg='median'):
         super(MethodStore, self).__init__()
         self.df = pd.DataFrame()
         self.frames_agg = frames_agg
@@ -29,8 +29,8 @@ class MethodStore(object):
             for json_path in json_paths:
                 with open(json_path) as json_file:
                     json_string = json.loads(json_file.read())
-                    track_df = json2df(json_string, json_path.stem)
-                    method.add_track(track_df)
+                track_df = json2df(json_string, json_path.stem)
+                method.add_track(track_df)
         self.add_evalstore(method, p.stem)
 
     def add_evalstore(self, method, name):
@@ -43,20 +43,20 @@ class MethodStore(object):
             ['method', 'track', 'target', 'metric'])['score']
 
         if self.frames_agg == 'median':
-            df_aggregated_frames = df_aggregated_frames_gb.median().reset_index()
+            df_aggregated_frames = df_aggregated_frames_gb.median()
         elif self.frames_agg == 'mean':
-            df_aggregated_frames = df_aggregated_frames_gb.mean().reset_index()
+            df_aggregated_frames = df_aggregated_frames_gb.mean()
 
         return df_aggregated_frames
 
     def agg_frames_tracks_scores(self):
-        df_aggregated_frames = self.agg_frames_scores()
+        df_aggregated_frames = self.agg_frames_scores().reset_index()
         if self.tracks_agg == 'median':
             df_aggregated_tracks = df_aggregated_frames.groupby(
-                ['method', 'target', 'metric'])['score'].median().reset_index()
+                ['method', 'target', 'metric'])['score'].median()
         elif self.tracks_agg == 'mean':
             df_aggregated_tracks = df_aggregated_frames.groupby(
-                ['method', 'target', 'metric'])['score'].mean().reset_index()
+                ['method', 'target', 'metric'])['score'].mean()
 
         return df_aggregated_tracks
 
@@ -67,6 +67,19 @@ class MethodStore(object):
         self.df.to_pickle(path)
 
 class EvalStore(object):
+    """
+    Evaluation Storage that holds the scores for all frames of one track
+
+    Attributes
+    ----------
+    df : string
+        name of track, required.
+    frames_agg : function or string
+        aggregation function for frames, defaults to `median`
+    tracks_agg : function or string
+        aggregation function for frames, defaults to `'median' = `np.nanmedian`
+    tracks : list(TrackStore)
+    """
     def __init__(self, frames_agg='median', tracks_agg='median', tracks=None):
         super(EvalStore, self).__init__()
         self.df = pd.DataFrame()
@@ -75,28 +88,38 @@ class EvalStore(object):
         if tracks:
             (self.add_track(track) for track in tracks)
 
-    def add_track(self, track):
-        self.df = self.df.append(track.df, ignore_index=True)
+    def add_track(self, track_df):
+        self.df = self.df.append(track_df, ignore_index=True)
+
+    def add_eval_dir(self, path):
+        p = Path(path)
+        if p.exists():
+            json_paths = p.glob('test/**/*.json')
+            for json_path in json_paths:
+                with open(json_path) as json_file:
+                    json_string = json.loads(json_file.read())
+                track_df = json2df(json_string, json_path.stem)
+                self.add_track(track_df)
 
     def agg_frames_scores(self):
         df_aggregated_frames_gb = self.df.groupby(
             ['track', 'target', 'metric'])['score']
 
         if self.frames_agg == 'median':
-            df_aggregated_frames = df_aggregated_frames_gb.median().reset_index()
+            df_aggregated_frames = df_aggregated_frames_gb.median()
         elif self.frames_agg == 'mean':
-            df_aggregated_frames = df_aggregated_frames_gb.mean().reset_index()
+            df_aggregated_frames = df_aggregated_frames_gb.mean()
 
         return df_aggregated_frames
 
     def agg_frames_tracks_scores(self):
-        df_aggregated_frames = self.agg_frames_scores()
+        df_aggregated_frames = self.agg_frames_scores().reset_index()
         if self.tracks_agg == 'median':
             df_aggregated_tracks = df_aggregated_frames.groupby(
-                ['target', 'metric']).median().reset_index()
+                ['target', 'metric'])['score'].median()
         elif self.tracks_agg == 'mean':
             df_aggregated_tracks = df_aggregated_frames.groupby(
-                ['target', 'metric']).mean().reset_index()
+                ['target', 'metric'])['score'].mean()
 
         return df_aggregated_tracks
 
@@ -121,8 +144,7 @@ class EvalStore(object):
         return out
 
 
-def json2df(eval_json, track_name):
-    json_string = json.loads(eval_json)
+def json2df(json_string, track_name):
     df = json_normalize(
         json_string['targets'],
         ['frames'],

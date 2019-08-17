@@ -1,32 +1,19 @@
 museval
 =======
 
-A python package to evaluate **sigsep musdb18** source separation results
-as part of the `MUS task <https://sisec.inria.fr/home/2018-professionally-produced-music-recordings/>`__
-of the `Signal Separation Evaluation Campaign
-(SISEC) <https://sisec.inria.fr/>`__
-
-
-Contents:
------------------
-
-.. toctree::
-   :maxdepth: 2
-
-   usage
+A python package to evaluate source separation estimates.
 
 API documentation
------------------
+=================
 
-.. toctree::
-   :maxdepth: 2
+.. automodule:: museval
+    :members:
 
-   museval
-   museval.metrics
+.. automodule:: museval.metrics
+    :members:
 
-References
-~~~~~~~~~~
+.. automodule:: museval.aggregate
+    :members:
 
-If you use this package, please reference the following paper
-
-.. code:: tex
+.. automodule:: museval.cli
+    :members:

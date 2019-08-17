@@ -14,14 +14,14 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'museval api'
-copyright = '2019, Fabian-Robert Stoeter'
-author = 'Fabian-Robert Stoeter, Antoine Liutkus'
+project = 'museval'
+copyright = '2019, Inria (Fabian-Robert Stöter, Antoine Liutkus)'
+author = 'Fabian-Robert Stöter, Antoine Liutkus'
 
 # The short X.Y version
 version = '0.3.0'
 # The full version, including alpha/beta/rc tags
-release = '0.3.0'
+release = ''
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,13 +35,13 @@ release = '0.3.0'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'sphinx.ext.githubpages',
+    'numpydoc'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -105,6 +105,18 @@ html_sidebars = {'**': ['globaltoc.html',
 #
 # html_sidebars = {}
 
+html_theme_options = {
+    'logo_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    # Toc options
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False
+}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
@@ -137,7 +149,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'museval.tex', 'museval Documentation',
-     'Fabian-Robert Stoeter', 'manual'),
+     'Fabian-Robert Stöter, Antoine Liutkus', 'manual'),
 ]
 
 
@@ -158,7 +170,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'museval', 'museval Documentation',
-     author, 'museval', 'Python parser for the museval18 music separation dataset.',
+     author, 'museval', 'One line description of project.',
      'Miscellaneous'),
 ]
 
@@ -176,9 +188,12 @@ epub_title = project
 # A unique identification for the text.
 #
 # epub_uid = ''
+html_show_sourcelink = True
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
 
+autodoc_member_order = 'bysource'
+numpydoc_show_class_members = False
 
 # -- Extension configuration -------------------------------------------------

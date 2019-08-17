@@ -62,7 +62,8 @@ if __name__ == "__main__":
             'docs': [
                 'sphinx',
                 'sphinx_rtd_theme',
-                'recommonmark'
+                'recommonmark',
+                'numpydoc'
             ],
         },
 

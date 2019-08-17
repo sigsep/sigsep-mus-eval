@@ -12,7 +12,7 @@ import museval
 import warnings
 import pandas as pd
 from pandas.io.json import json_normalize
-from . aggregate import MethodsStore, EvalStore, json2df
+from . aggregate import MethodStore, EvalStore, json2df
 from . import metrics
 from . version import _version
 
