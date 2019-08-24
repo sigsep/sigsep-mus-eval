@@ -31,6 +31,31 @@ def reference(mus, track_name):
     return track, ref_json
 
 
+def test_aggregate(reference):
+    track, _ = reference
+
+    np.random.seed(0)
+    random_voc = np.random.random(track.audio.shape)
+    random_acc = np.random.random(track.audio.shape)
+
+    # create a silly regression test
+    estimates = {
+        'vocals': random_voc,
+        'accompaniment': random_acc
+    }
+
+    scores = museval.eval_mus_track(
+        track, estimates
+    )
+
+    print(scores.df)
+
+    results = museval.EvalStore()
+    results.add_track(scores)
+    agg = results.agg_frames_scores()
+    print(results)
+
+
 def test_track_scores(reference):
     track, ref_scores = reference
 
