@@ -408,14 +408,11 @@ def json2df(json_string, track_name):
         ['frames'],
         ['name']
     )
+    
+    df.columns = [col.replace('metrics.', '') for col in df.columns]
+    
     df = pd.melt(
-        pd.concat(
-            [
-                df.drop(['metrics'], axis=1),
-                df['metrics'].apply(pd.Series)
-            ],
-            axis=1
-        ),
+        df,
         var_name='metric',
         value_name='score',
         id_vars=['time', 'name'],
