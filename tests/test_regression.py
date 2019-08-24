@@ -6,25 +6,33 @@ import museval
 import numpy as np
 
 
-test_track = 'Music Delta - 80s Rock'
-
-json_path = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    'data/%s.json' % test_track,
-)
-
-
 @pytest.fixture()
 def mus():
     return musdb.DB(download=True)
 
 
-def test_estimate_and_evaluate(mus):
-    # return any number of targets
-    with open(json_path) as json_file:
-        ref = json.loads(json_file.read())
+@pytest.fixture(params=["Music Delta - 80s Rock"])
+def track_name(request):
+    return request.param
 
-    track = [track for track in mus.tracks if track.name == test_track][0]
+
+@pytest.fixture()
+def reference(mus, track_name):
+    track = [track for track in mus.tracks if track.name == track_name][0]
+
+    json_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        'data/%s.json' % track_name,
+    )
+
+    with open(json_path) as json_file:
+        ref_json = json.loads(json_file.read())
+
+    return track, ref_json
+
+
+def test_track_scores(reference):
+    track, ref_scores = reference
 
     np.random.seed(0)
     random_voc = np.random.random(track.audio.shape)
@@ -40,32 +48,51 @@ def test_estimate_and_evaluate(mus):
         track, estimates
     )
 
-    assert scores.validate() is None
+    est_scores = json.loads(scores.json)
+    for target in ref_scores['targets']:
+        for metric in ['SDR', 'SIR', 'SAR', 'ISR']:
 
+            ref = np.array([d['metrics'][metric] for d in target['frames']])
+            idx = [t['name']
+                   for t in est_scores['targets']].index(target['name'])
+            est = np.array(
+                [
+                    d['metrics'][metric]
+                    for d in est_scores['targets'][idx]['frames']
+                ]
+            )
+
+            assert np.allclose(ref, est, atol=1e-02, equal_nan=True)
+
+
+def test_random_estimate(reference):
+    track, _ = reference
+    np.random.seed(0)
+    random_voc = np.random.random(track.audio.shape)
+    random_acc = np.random.random(track.audio.shape)
+
+    # create a silly regression test
+    estimates = {
+        'vocals': random_voc,
+        'accompaniment': random_acc
+    }
+
+    scores = museval.eval_mus_track(
+        track, estimates
+    )
+
+    # save json
     with open(
         os.path.join('.', track.name) + '.json', 'w+'
     ) as f:
         f.write(scores.json)
 
-    scores = json.loads(scores.json)
-
-    for target in ref['targets']:
-        for metric in ['SDR', 'SIR', 'SAR', 'ISR']:
-
-            ref = np.array([d['metrics'][metric] for d in target['frames']])
-            idx = [t['name'] for t in scores['targets']].index(target['name'])
-            est = np.array(
-                [
-                    d['metrics'][metric]
-                    for d in scores['targets'][idx]['frames']
-                ]
-            )
-
-            assert np.allclose(ref, est, atol=1e-02)
+    # validate json
+    assert scores.validate() is None
 
 
-def test_one_estimate(mus):
-    track = [track for track in mus.tracks if track.name == test_track][0]
+def test_one_estimate(reference):
+    track, _ = reference
 
     np.random.seed(0)
     random_voc = np.random.random(track.audio.shape)
@@ -75,10 +102,10 @@ def test_one_estimate(mus):
     }
 
     with pytest.warns(UserWarning):
-        scores = museval.eval_mus_track(
+        est_scores = museval.eval_mus_track(
             track, estimates
         )
 
-    scores = json.loads(scores.json)
+    est_json = json.loads(est_scores.json)
 
-    assert len(scores['targets']) == 0
+    assert len(est_json['targets']) == 0
