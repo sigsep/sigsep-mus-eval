@@ -161,4 +161,4 @@ A. If you use the `museval` in the context of source separation evaluation compa
 
 B. if you use the software for any other purpose, you can cite the software release
 
-[![DOI](https://zenodo.org/badge/120666367.svg)](https://zenodo.org/badge/latestdoi/120666367)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3376621.svg)](https://doi.org/10.5281/zenodo.3376621)
