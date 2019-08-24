@@ -44,12 +44,12 @@ if __name__ == "__main__":
         # computations stack
         install_requires=[
             'musdb>=0.3.0',
+            'pandas>=0.25.0',
             'numpy',
             'scipy',
             'simplejson',
             'soundfile',
-            'jsonschema',
-            'pandas'
+            'jsonschema'
         ],
 
         package_data={
