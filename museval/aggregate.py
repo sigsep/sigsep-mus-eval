@@ -1,6 +1,5 @@
 import pandas
 from pathlib import Path
-from pandas.io.json import json_normalize
 import pandas as pd
 import simplejson
 import argparse
@@ -403,7 +402,7 @@ def json2df(json_string, track_name):
     track_name : str
     """
 
-    df = json_normalize(
+    df = pd.json_normalize(
         json_string['targets'],
         ['frames'],
         ['name']
