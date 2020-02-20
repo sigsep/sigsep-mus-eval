@@ -44,7 +44,7 @@ if __name__ == "__main__":
         # computations stack
         install_requires=[
             'musdb>=0.3.0',
-            'pandas>=0.25.0',
+            'pandas>=1.0.1',
             'numpy',
             'scipy',
             'simplejson',
