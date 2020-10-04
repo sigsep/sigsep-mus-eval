@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
         extras_require={  # Optional
             'dev': ['check-manifest'],
-            'tests': ['pytest', 'pytest-pep8'],
+            'tests': ['pytest'],
             'docs': [
                 'sphinx',
                 'sphinx_rtd_theme',
@@ -70,7 +70,6 @@ if __name__ == "__main__":
         tests_require=[
             'pytest',
             'pytest-cov',
-            'pytest-pep8',
             'coverage>=4.4'
         ],
 
