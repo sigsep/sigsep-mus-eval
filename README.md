@@ -62,7 +62,7 @@ Make sure `output_dir` is set. `museval` will recreate the `musdb` file structur
 
 If you have already computed your estimates, we provide you with an easy-to-use function to process evaluation results afterwards.
 
-Simply use the `museval.eval_mus_dir` to evaluate your `estimates_dir` and write the results into the `output_dir`. For convenience, the `eval_mus_dir` function accepts all parameters of the `musdb.run()`. That way e.g. multiprocessing can easily be enabled by setting `parallel=True`:
+Simply use the `museval.eval_mus_dir` to evaluate your `estimates_dir` and write the results into the `output_dir`. For convenience, the `eval_mus_dir` function accepts all parameters of the `musdb.run()`.
 
 ```python
 import musdb
