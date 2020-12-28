@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import museval
 
-comparisons = museval.MethodsStore()
+comparisons = museval.MethodStore()
 comparisons.add_sisec18()
 agg_df = comparisons.agg_frames_scores()
 
