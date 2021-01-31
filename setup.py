@@ -43,7 +43,7 @@ if __name__ == "__main__":
         # Dependencies, this installs the entire Python scientific
         # computations stack
         install_requires=[
-            'musdb>=0.3.0',
+            'musdb>=0.4.0',
             'pandas>=1.0.1',
             'numpy',
             'scipy',
