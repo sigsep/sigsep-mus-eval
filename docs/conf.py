@@ -15,11 +15,11 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'museval'
-copyright = '2019, Inria (Fabian-Robert Stöter, Antoine Liutkus)'
+copyright = '2021, Inria (Fabian-Robert Stöter, Antoine Liutkus)'
 author = 'Fabian-Robert Stöter, Antoine Liutkus'
 
 # The short X.Y version
-version = '0.3.0'
+version = '0.4.0'
 # The full version, including alpha/beta/rc tags
 release = ''
 
