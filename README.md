@@ -109,10 +109,10 @@ To compare against participants from [SiSEC MUS 2018](https://github.com/sigsep/
 We provide a command line wrapper of `eval_mus_dir` by calling the `museval` command line tool. The following example is equivalent to the code example above:
 
 ```
-museval -p --musdb path/to/musdb -o path/to/output_dir path/to/estimate_dir
+museval --musdb path/to/musdb -o path/to/output_dir path/to/estimate_dir
 ```
 
-:bulb: you use the `--iswav` flag to use the decoded wav _musdb_ dataset.
+:bulb: you use the `--is-wav` flag to use the decoded wav _musdb_ dataset.
 
 ### Using Docker for Evaluation
 
