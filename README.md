@@ -76,8 +76,7 @@ museval.eval_mus_dir(
     dataset=mus,  # instance of musdb
     estimates_dir=...,  # path to estimate folder
     output_dir=...,  # set a folder to write eval json files
-    subsets="test",
-    is_wav=False
+    ext='wav
 )
 ```
 
@@ -91,6 +90,14 @@ results = museval.EvalStore(frames_agg='median', tracks_agg='median')
 for track in tracks:
     # ...
     results.add_track(museval.eval_mus_track(track, estimates))
+```
+
+You may also add scores that have been computed beforehand through `museval.eval_mus_dir`:
+```python
+results = museval.EvalStore(frames_agg='median', tracks_agg='median')
+results.add_eval_dir(
+    path=...# path to the output_dir for eval_mus_dir
+)
 ```
 
 When all tracks have been added, the aggregated scores can be shown using `print(results)` and results may be saved as a pandas DataFrame `results.save('my_method.pandas')`.
