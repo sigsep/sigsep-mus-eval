@@ -46,7 +46,9 @@ References
      1706, IRISA, April 2005."""
 
 import numpy as np
-import scipy.fftpack
+import scipy.fft
+import cupyx
+import cupy
 from scipy.linalg import toeplitz
 from scipy.signal import fftconvolve
 import itertools
@@ -523,19 +525,20 @@ def _compute_reference_correlations(reference_sources, filters_len):
     # zero padding and FFT of references
     reference_sources = _zeropad(reference_sources, filters_len - 1, axis=2)
     n_fft = int(2**np.ceil(np.log2(nsampl + filters_len - 1.)))
-    sf = scipy.fftpack.fft(reference_sources, n=n_fft, axis=2)
+
+    sf = cupy.asnumpy(cupyx.scipy.fft.fft(cupy.asarray(reference_sources), n=n_fft, axis=2))
 
     # compute intercorrelation between sources
     G = np.zeros((nsrc, nsrc, nchan, nchan, filters_len, filters_len))
+
     for ((i, c1), (j, c2)) in itertools.combinations_with_replacement(
         itertools.product(
             list(range(nsrc)), list(range(nchan))
         ),
         2
     ):
+        ssf = np.real(cupy.asnumpy(cupyx.scipy.fft.ifft(cupy.asarray(sf[j, c2] * np.conj(sf[i, c1])))))
 
-        ssf = sf[j, c2] * np.conj(sf[i, c1])
-        ssf = np.real(scipy.fftpack.ifft(ssf))
         ss = toeplitz(
             np.hstack((ssf[0], ssf[-1:-filters_len:-1])),
             r=ssf[:filters_len]
@@ -569,15 +572,16 @@ def _compute_projection_filters(G, sf, estimated_source):
 
     # compute its FFT
     n_fft = int(2**np.ceil(np.log2(nsampl + filters_len - 1.)))
-    sef = scipy.fftpack.fft(estimated_source, n=n_fft)
+
+    sef = cupy.asnumpy(cupyx.scipy.fft.fft(cupy.asarray(estimated_source, dtype=np.float32), n=n_fft))
 
     # compute the cross-correlations between sources and estimates
     D = np.zeros((nsrc, nchan, filters_len, nchan))
+
     for (j, cj, c) in itertools.product(
         list(range(nsrc)), list(range(nchan)), list(range(nchan))
     ):
-        ssef = sf[j, cj] * np.conj(sef[c])
-        ssef = np.real(scipy.fftpack.ifft(ssef))
+        ssef = np.real(cupy.asnumpy(cupyx.scipy.fft.ifft(cupy.asarray(sf[j, cj] * np.conj(sef[c])))))
         D[j, cj, :, c] = np.hstack((ssef[0], ssef[-1:-filters_len:-1]))
 
     # reshape matrices to build the filters
