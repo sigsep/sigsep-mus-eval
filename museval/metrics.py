@@ -526,7 +526,7 @@ def _compute_reference_correlations(reference_sources, filters_len):
     reference_sources = _zeropad(reference_sources, filters_len - 1, axis=2)
     n_fft = int(2**np.ceil(np.log2(nsampl + filters_len - 1.)))
 
-    sf = cupy.asnumpy(cupyx.scipy.fft.fft(cupy.asarray(reference_sources), n=n_fft, axis=2))
+    sf = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(reference_sources), n=n_fft, axis=2))
 
     # compute intercorrelation between sources
     G = np.zeros((nsrc, nsrc, nchan, nchan, filters_len, filters_len))
@@ -537,7 +537,7 @@ def _compute_reference_correlations(reference_sources, filters_len):
         ),
         2
     ):
-        ssf = np.real(cupy.asnumpy(cupyx.scipy.fft.ifft(cupy.asarray(sf[j, c2] * np.conj(sf[i, c1])))))
+        ssf = cupy.asnumpy(cupyx.scipy.fft.irfft(cupy.asarray(sf[j, c2] * np.conj(sf[i, c1]))))
 
         ss = toeplitz(
             np.hstack((ssf[0], ssf[-1:-filters_len:-1])),
@@ -573,7 +573,7 @@ def _compute_projection_filters(G, sf, estimated_source):
     # compute its FFT
     n_fft = int(2**np.ceil(np.log2(nsampl + filters_len - 1.)))
 
-    sef = cupy.asnumpy(cupyx.scipy.fft.fft(cupy.asarray(estimated_source, dtype=np.float32), n=n_fft))
+    sef = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(estimated_source, dtype=np.float32), n=n_fft))
 
     # compute the cross-correlations between sources and estimates
     D = np.zeros((nsrc, nchan, filters_len, nchan))
@@ -581,20 +581,23 @@ def _compute_projection_filters(G, sf, estimated_source):
     for (j, cj, c) in itertools.product(
         list(range(nsrc)), list(range(nchan)), list(range(nchan))
     ):
-        ssef = np.real(cupy.asnumpy(cupyx.scipy.fft.ifft(cupy.asarray(sf[j, cj] * np.conj(sef[c])))))
+        ssef = cupy.asnumpy(cupyx.scipy.fft.irfft(cupy.asarray(sf[j, cj] * np.conj(sef[c]))))
         D[j, cj, :, c] = np.hstack((ssef[0], ssef[-1:-filters_len:-1]))
 
     # reshape matrices to build the filters
     D = D.reshape(nsrc * nchan * filters_len, nchan)
     G = _reshape_G(G)
 
+    D_gpu = cupy.asarray(D)
+    G_gpu = cupy.asarray(G)
+
     # Distortion filters
     try:
-        C = np.linalg.solve(G + eps*np.eye(G.shape[0]), D).reshape(
+        C = cupy.asnumpy(cupy.linalg.solve(G_gpu + eps*cupy.eye(G.shape[0]), D_gpu)).reshape(
             nsrc, nchan, filters_len, nchan
         )
     except np.linalg.linalg.LinAlgError:
-        C = np.linalg.lstsq(G, D)[0].reshape(
+        C = cupy.asnumpy(cupy.linalg.lstsq(G_gpu, D_gpu))[0].reshape(
             nsrc, nchan, filters_len, nchan
         )
 
