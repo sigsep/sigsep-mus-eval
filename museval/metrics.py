@@ -557,7 +557,7 @@ def _compute_reference_correlations(reference_sources, filters_len):
 
     if use_cupy:
         try:
-            sf = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(reference_sources, dtype=np.float32), n=n_fft, axis=2))
+            sf = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(reference_sources), n=n_fft, axis=2))
         except cupy.cuda.memory.OutOfMemoryError:
             sf = scipy.fft.rfft(reference_sources, n=n_fft, axis=2)
     else:
@@ -647,8 +647,8 @@ def _compute_projection_filters(G, sf, estimated_source):
 
     if use_cupy:
         try:
-            D_gpu = cupy.asarray(D, dtype=np.float32)
-            G_gpu = cupy.asarray(G, dtype=np.float32)
+            D_gpu = cupy.asarray(D)
+            G_gpu = cupy.asarray(G)
 
             # Distortion filters
             try:
