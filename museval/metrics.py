@@ -47,16 +47,45 @@ References
 
 import numpy as np
 import scipy.fft
-import cupyx
-import cupy
 from scipy.linalg import toeplitz
 from scipy.signal import fftconvolve
 import itertools
 import collections
 import warnings
 
+use_cupy = False
+try:
+    import cupyx
+    import cupy
+    use_cupy = True
+except ImportError:
+    warnings.warn('cupy not available, falling back to regular numpy', file=sys.stderr)
+
 # The maximum allowable number of sources (prevents insane computational load)
 MAX_SOURCES = 100
+
+
+# allows one to disable cupy even if its available
+def disable_cupy():
+    global use_cupy
+    use_cupy = False
+
+
+# fft plans take up space, you might need to call this between large tracks
+def clear_cupy_cache():
+    # cupy disable fft caching to free blocks
+    fft_cache = cupy.fft.config.get_plan_cache()
+    orig_sz = fft_cache.get_size()
+    orig_memsz = fft_cache.get_memsize()
+
+    # clear the cache
+    fft_cache.set_size(0)
+
+    cupy.get_default_memory_pool().free_all_blocks()
+
+    # cupy reenable fft caching
+    fft_cache.set_size(orig_sz)
+    fft_cache.set_memsize(orig_memsz)
 
 
 def validate(reference_sources, estimated_sources):
@@ -526,10 +555,13 @@ def _compute_reference_correlations(reference_sources, filters_len):
     reference_sources = _zeropad(reference_sources, filters_len - 1, axis=2)
     n_fft = int(2**np.ceil(np.log2(nsampl + filters_len - 1.)))
 
-    try:
-        sf = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(reference_sources, dtype=np.float32), n=n_fft, axis=2))
-    except cupy.cuda.memory.OutOfMemoryError:
-        sf = scipy.fft.rfft(reference_sources, n=nfft, axis=2)
+    if use_cupy:
+        try:
+            sf = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(reference_sources, dtype=np.float32), n=n_fft, axis=2))
+        except cupy.cuda.memory.OutOfMemoryError:
+            sf = scipy.fft.rfft(reference_sources, n=n_fft, axis=2)
+    else:
+        sf = scipy.fft.rfft(reference_sources, n=n_fft, axis=2)
 
     # compute intercorrelation between sources
     G = np.zeros((nsrc, nsrc, nchan, nchan, filters_len, filters_len))
@@ -541,10 +573,15 @@ def _compute_reference_correlations(reference_sources, filters_len):
         2
     ):
         tmp = sf[j, c2] * np.conj(sf[i, c1])
-        try:
-            ssf = cupy.asnumpy(cupyx.scipy.fft.irfft(cupy.asarray(tmp)))
-        except cupy.cuda.memory.OutOfMemoryError:
+
+        if use_cupy:
+            try:
+                ssf = cupy.asnumpy(cupyx.scipy.fft.irfft(cupy.asarray(tmp)))
+            except cupy.cuda.memory.OutOfMemoryError:
+                ssf = scipy.fft.irfft(tmp)
+        else:
             ssf = scipy.fft.irfft(tmp)
+
         ss = toeplitz(
             np.hstack((ssf[0], ssf[-1:-filters_len:-1])),
             r=ssf[:filters_len]
@@ -580,9 +617,12 @@ def _compute_projection_filters(G, sf, estimated_source):
     # compute its FFT
     n_fft = int(2**np.ceil(np.log2(nsampl + filters_len - 1.)))
 
-    try:
-        sef = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(estimated_source, dtype=np.float32), n=n_fft))
-    except cupy.cuda.memory.OutOfMemoryError:
+    if use_cupy:
+        try:
+            sef = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(estimated_source, dtype=np.float32), n=n_fft))
+        except cupy.cuda.memory.OutOfMemoryError:
+            sef = scipy.fft.rfft(estimated_source, n=n_fft)
+    else:
         sef = scipy.fft.rfft(estimated_source, n=n_fft)
 
     # compute the cross-correlations between sources and estimates
@@ -592,9 +632,12 @@ def _compute_projection_filters(G, sf, estimated_source):
         list(range(nsrc)), list(range(nchan)), list(range(nchan))
     ):
         tmp = sf[j, cj] * np.conj(sef[c])
-        try:
-            ssef = cupy.asnumpy(cupyx.scipy.fft.irfft(cupy.asarray(tmp)))
-        except cupy.cuda.memory.OutOfMemoryError:
+        if use_cupy:
+            try:
+                ssef = cupy.asnumpy(cupyx.scipy.fft.irfft(cupy.asarray(tmp)))
+            except cupy.cuda.memory.OutOfMemoryError:
+                ssef = scipy.fft.irfft(tmp)
+        else:
             ssef = scipy.fft.irfft(tmp)
         D[j, cj, :, c] = np.hstack((ssef[0], ssef[-1:-filters_len:-1]))
 
@@ -602,22 +645,32 @@ def _compute_projection_filters(G, sf, estimated_source):
     D = D.reshape(nsrc * nchan * filters_len, nchan)
     G = _reshape_G(G)
 
-    try:
-        D_gpu = cupy.asarray(D, dtype=np.float32)
-        G_gpu = cupy.asarray(G, dtype=np.float32)
+    if use_cupy:
+        try:
+            D_gpu = cupy.asarray(D, dtype=np.float32)
+            G_gpu = cupy.asarray(G, dtype=np.float32)
 
-        # Distortion filters
+            # Distortion filters
+            try:
+                C = cupy.asnumpy(cupy.linalg.solve(G_gpu + eps*cupy.eye(G.shape[0]), D_gpu)).reshape(
+                    nsrc, nchan, filters_len, nchan
+                )
+            except np.linalg.linalg.LinAlgError:
+                C = cupy.asnumpy(cupy.linalg.lstsq(G_gpu, D_gpu))[0].reshape(
+                    nsrc, nchan, filters_len, nchan
+                )
+        except cupy.cuda.memory.OutOfMemoryError:
+            try:
+                C = np.linalg.solve(G + eps*np.eye(G.shape[0]), D).reshape(
+                    nsrc, nchan, filters_len, nchan
+                )
+            except np.linalg.linalg.LinAlgError:
+                C = np.linalg.lstsq(G, D)[0].reshape(
+                    nsrc, nchan, filters_len, nchan
+                )
+    else:
         try:
-            C = cupy.asnumpy(cupy.linalg.solve(G_gpu + eps*cupy.eye(G.shape[0]), D_gpu)).reshape(
-                nsrc, nchan, filters_len, nchan
-            )
-        except np.linalg.linalg.LinAlgError:
-            C = cupy.asnumpy(cupy.linalg.lstsq(G_gpu, D_gpu))[0].reshape(
-                nsrc, nchan, filters_len, nchan
-            )
-    except cupy.cuda.memory.OutOfMemoryError:
-        try:
-            C = np.linalg.solve(G + eps*cupy.eye(G.shape[0]), D).reshape(
+            C = np.linalg.solve(G + eps*np.eye(G.shape[0]), D).reshape(
                 nsrc, nchan, filters_len, nchan
             )
         except np.linalg.linalg.LinAlgError:

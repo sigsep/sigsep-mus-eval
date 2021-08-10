@@ -59,6 +59,7 @@ if __name__ == "__main__":
         extras_require={  # Optional
             'dev': ['check-manifest'],
             'tests': ['pytest'],
+            'cupy': ['cupy-cuda114'],
             'docs': [
                 'sphinx',
                 'sphinx_rtd_theme',

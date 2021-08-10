@@ -5,6 +5,8 @@ import simplejson as json
 import museval
 import numpy as np
 
+#museval.disable_cupy()
+
 
 @pytest.fixture()
 def mus():
