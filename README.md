@@ -6,13 +6,6 @@
 
 A python package to evaluate source separation results using the [MUSDB18](https://sigsep.github.io/musdb) dataset. This package was part of the [MUS task](https://sisec.inria.fr/home/2018-professionally-produced-music-recordings/) of the [Signal Separation Evaluation Campaign (SISEC)](https://sisec.inria.fr/).
 
-### Note on the sevagh fork
-
-My fork adds considerable speedups by using cupy for offloading the fft, ifft, and linalg executions of BSSv4 to the user's NVIDIA GPU. However, this has several downsides:
-* Switching to using GPU arithmetic and float32 changes output values due to numerical precision differences
-* Managing memory is not straightforward, often requiring the user to disable and re-enable the cupy fft cache between runs
-* Installing GPU libraries is a burden on end users, so it's a bigger conversation to merge such a requirement upstream
-
 ### BSSEval v4
 
 The BSSEval metrics, as implemented in the [MATLAB toolboxes](http://bass-db.gforge.inria.fr/bss_eval/) and their re-implementation in [mir_eval](http://craffel.github.io/mir_eval/#module-mir_eval.separation) are widely used in the audio separation literature. One particularity of BSSEval is to compute the metrics after optimally matching the estimates to the true sources through linear distortion filters. This allows the criteria to be robust to some linear mismatches. Apart from the optional evaluation for all possible permutations of the sources, this matching is the reason for most of the computation cost of BSSEval, especially considering it is done for each evaluation window when the metrics are computed on a framewise basis.
