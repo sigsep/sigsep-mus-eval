@@ -126,7 +126,7 @@ class TrackStore(object):
             for metric in ['SDR', 'SIR', 'ISR', 'SAR']:
                 out += metric + ":" + \
                     "{:>8.3f}".format(
-                        self.frames_agg([np.float(f['metrics'][metric])
+                        self.frames_agg([float(f['metrics'][metric])
                                          for f in t['frames']])
                     ) + "  "
             out += "\n"
