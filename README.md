@@ -116,10 +116,10 @@ To compare against participants from [SiSEC MUS 2018](https://github.com/sigsep/
 We provide a command line wrapper of `eval_mus_dir` by calling the `museval` command line tool. The following example is equivalent to the code example above:
 
 ```
-museval -p --musdb path/to/musdb -o path/to/output_dir path/to/estimate_dir
+museval --musdb path/to/musdb -o path/to/output_dir path/to/estimate_dir
 ```
 
-:bulb: you use the `--iswav` flag to use the decoded wav _musdb_ dataset.
+:bulb: you use the `--is-wav` flag to use the decoded wav _musdb_ dataset.
 
 ### Using Docker for Evaluation
 
@@ -149,7 +149,7 @@ docker run --rm -v estimatesdir:/est -v musdbdir:/mus -v outputdir:/out faroit/s
 
 In the line above, replace `estimatesdir`, `musdbdir` and `outputdir` by the absolute paths for your setting.  Please note that docker requires absolute paths so you have to rely on your command line environment to convert relative paths to absolute paths (e.g. by using `$HOME/` on Unix).
 
-:warning: `museval` requires a significant amount of memory for the evaluation. Evaluating all five targets for _MUSDB18_ may require more than 4GB of RAM. If you use multiprocessing by using the `-p` switch in `museval`, this results in 16GB of RAM. It is recommended to adjust your Docker preferences, because the docker container might just quit if its out of memory.
+:warning: `museval` requires a significant amount of memory for the evaluation. Evaluating all five targets for _MUSDB18_ may require more than 4GB of RAM. It is recommended to adjust your Docker preferences, because the docker container might just quit if its out of memory.
 
 ## How to contribute
 
