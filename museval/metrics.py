@@ -46,15 +46,47 @@ References
      1706, IRISA, April 2005."""
 
 import numpy as np
-import scipy.fftpack
+import scipy.fft
 from scipy.linalg import toeplitz
 from scipy.signal import fftconvolve
 import itertools
 import collections
 import warnings
+import sys
+
+use_cupy = False
+try:
+    import cupyx
+    import cupy
+    use_cupy = True
+except ImportError:
+    warnings.warn('cupy not available, falling back to regular numpy')
 
 # The maximum allowable number of sources (prevents insane computational load)
 MAX_SOURCES = 100
+
+
+# allows one to disable cupy even if its available
+def disable_cupy():
+    global use_cupy
+    use_cupy = False
+
+
+# fft plans take up space, you might need to call this between large tracks
+def clear_cupy_cache():
+    # cupy disable fft caching to free blocks
+    fft_cache = cupy.fft.config.get_plan_cache()
+    orig_sz = fft_cache.get_size()
+    orig_memsz = fft_cache.get_memsize()
+
+    # clear the cache
+    fft_cache.set_size(0)
+
+    cupy.get_default_memory_pool().free_all_blocks()
+
+    # cupy reenable fft caching
+    fft_cache.set_size(orig_sz)
+    fft_cache.set_memsize(orig_memsz)
 
 
 def validate(reference_sources, estimated_sources):
@@ -523,25 +555,41 @@ def _compute_reference_correlations(reference_sources, filters_len):
     # zero padding and FFT of references
     reference_sources = _zeropad(reference_sources, filters_len - 1, axis=2)
     n_fft = int(2**np.ceil(np.log2(nsampl + filters_len - 1.)))
-    sf = scipy.fftpack.fft(reference_sources, n=n_fft, axis=2)
+
+    if use_cupy:
+        try:
+            sf = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(reference_sources), n=n_fft, axis=2))
+        except cupy.cuda.memory.OutOfMemoryError:
+            sf = scipy.fft.rfft(reference_sources, n=n_fft, axis=2)
+    else:
+        sf = scipy.fft.rfft(reference_sources, n=n_fft, axis=2)
 
     # compute intercorrelation between sources
     G = np.zeros((nsrc, nsrc, nchan, nchan, filters_len, filters_len))
+
     for ((i, c1), (j, c2)) in itertools.combinations_with_replacement(
         itertools.product(
             list(range(nsrc)), list(range(nchan))
         ),
         2
     ):
+        tmp = sf[j, c2] * np.conj(sf[i, c1])
 
-        ssf = sf[j, c2] * np.conj(sf[i, c1])
-        ssf = np.real(scipy.fftpack.ifft(ssf))
+        if use_cupy:
+            try:
+                ssf = cupy.asnumpy(cupyx.scipy.fft.irfft(cupy.asarray(tmp)))
+            except cupy.cuda.memory.OutOfMemoryError:
+                ssf = scipy.fft.irfft(tmp)
+        else:
+            ssf = scipy.fft.irfft(tmp)
+
         ss = toeplitz(
             np.hstack((ssf[0], ssf[-1:-filters_len:-1])),
             r=ssf[:filters_len]
         )
         G[j, i, c2, c1] = ss
         G[i, j, c1, c2] = ss.T
+
     return G, sf
 
 
@@ -569,30 +617,67 @@ def _compute_projection_filters(G, sf, estimated_source):
 
     # compute its FFT
     n_fft = int(2**np.ceil(np.log2(nsampl + filters_len - 1.)))
-    sef = scipy.fftpack.fft(estimated_source, n=n_fft)
+
+    if use_cupy:
+        try:
+            sef = cupy.asnumpy(cupyx.scipy.fft.rfft(cupy.asarray(estimated_source, dtype=np.float32), n=n_fft))
+        except cupy.cuda.memory.OutOfMemoryError:
+            sef = scipy.fft.rfft(estimated_source, n=n_fft)
+    else:
+        sef = scipy.fft.rfft(estimated_source, n=n_fft)
 
     # compute the cross-correlations between sources and estimates
     D = np.zeros((nsrc, nchan, filters_len, nchan))
+
     for (j, cj, c) in itertools.product(
         list(range(nsrc)), list(range(nchan)), list(range(nchan))
     ):
-        ssef = sf[j, cj] * np.conj(sef[c])
-        ssef = np.real(scipy.fftpack.ifft(ssef))
+        tmp = sf[j, cj] * np.conj(sef[c])
+        if use_cupy:
+            try:
+                ssef = cupy.asnumpy(cupyx.scipy.fft.irfft(cupy.asarray(tmp)))
+            except cupy.cuda.memory.OutOfMemoryError:
+                ssef = scipy.fft.irfft(tmp)
+        else:
+            ssef = scipy.fft.irfft(tmp)
         D[j, cj, :, c] = np.hstack((ssef[0], ssef[-1:-filters_len:-1]))
 
     # reshape matrices to build the filters
     D = D.reshape(nsrc * nchan * filters_len, nchan)
     G = _reshape_G(G)
 
-    # Distortion filters
-    try:
-        C = np.linalg.solve(G + eps*np.eye(G.shape[0]), D).reshape(
-            nsrc, nchan, filters_len, nchan
-        )
-    except np.linalg.linalg.LinAlgError:
-        C = np.linalg.lstsq(G, D)[0].reshape(
-            nsrc, nchan, filters_len, nchan
-        )
+    if use_cupy:
+        try:
+            D_gpu = cupy.asarray(D)
+            G_gpu = cupy.asarray(G)
+
+            # Distortion filters
+            try:
+                C = cupy.asnumpy(cupy.linalg.solve(G_gpu + eps*cupy.eye(G.shape[0]), D_gpu)).reshape(
+                    nsrc, nchan, filters_len, nchan
+                )
+            except np.linalg.linalg.LinAlgError:
+                C = cupy.asnumpy(cupy.linalg.lstsq(G_gpu, D_gpu))[0].reshape(
+                    nsrc, nchan, filters_len, nchan
+                )
+        except cupy.cuda.memory.OutOfMemoryError:
+            try:
+                C = np.linalg.solve(G + eps*np.eye(G.shape[0]), D).reshape(
+                    nsrc, nchan, filters_len, nchan
+                )
+            except np.linalg.linalg.LinAlgError:
+                C = np.linalg.lstsq(G, D)[0].reshape(
+                    nsrc, nchan, filters_len, nchan
+                )
+    else:
+        try:
+            C = np.linalg.solve(G + eps*np.eye(G.shape[0]), D).reshape(
+                nsrc, nchan, filters_len, nchan
+            )
+        except np.linalg.linalg.LinAlgError:
+            C = np.linalg.lstsq(G, D)[0].reshape(
+                nsrc, nchan, filters_len, nchan
+            )
 
     # if we asked for one single reference source,
     # return just a nchan X filters_len matrix

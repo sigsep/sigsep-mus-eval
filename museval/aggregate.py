@@ -258,7 +258,7 @@ class EvalStore(object):
 
     def __repr__(self):
         targets = self.df['target'].unique()
-        out = "Aggrated Scores ({} over frames, {} over tracks)\n".format(
+        out = "Aggregated Scores ({} over frames, {} over tracks)\n".format(
             self.frames_agg, self.tracks_agg
         )
         for target in targets:
