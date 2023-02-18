@@ -60,7 +60,7 @@ try:
     import cupy
     use_cupy = True
 except ImportError:
-    warnings.warn('cupy not available, falling back to regular numpy', file=sys.stderr)
+    warnings.warn('cupy not available, falling back to regular numpy')
 
 # The maximum allowable number of sources (prevents insane computational load)
 MAX_SOURCES = 100
