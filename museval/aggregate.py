@@ -110,7 +110,7 @@ class TrackStore(object):
             pandas dataframe object of track scores
         """
         # encode and decode to json first
-        return json2df(simplejson.loads(self.json), self.track_name)
+        return json2df(simplejson.loads(self.json, allow_nan=True), self.track_name)
 
     def __repr__(self):
         """Print the frames_aggregated values instead of all frames
@@ -197,7 +197,7 @@ class EvalStore(object):
             json_paths = p.glob('test/**/*.json')
             for json_path in json_paths:
                 with open(json_path) as json_file:
-                    json_string = simplejson.loads(json_file.read())
+                    json_string = simplejson.loads(json_file.read(), allow_nan=True)
                 track_df = json2df(json_string, json_path.stem)
                 self.add_track(track_df)
 
@@ -317,7 +317,7 @@ class MethodStore(object):
             json_paths = p.glob('test/**/*.json')
             for json_path in json_paths:
                 with open(json_path) as json_file:
-                    json_string = simplejson.loads(json_file.read())
+                    json_string = simplejson.loads(json_file.read(), allow_nan=True)
                 track_df = json2df(json_string, json_path.stem)
                 method.add_track(track_df)
         self.add_evalstore(method, p.stem)
