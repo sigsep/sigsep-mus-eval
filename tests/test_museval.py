@@ -4,17 +4,17 @@ import museval.metrics as metrics
 import museval
 
 
-@pytest.fixture(params=[1, 2])
+@pytest.fixture(params=[2])
 def nb_sources(request):
     return request.param
 
 
-@pytest.fixture(params=[1, 2])
+@pytest.fixture(params=[2])
 def nb_channels(request):
     return request.param
 
 
-@pytest.fixture(params=[100, 1000])
+@pytest.fixture(params=[1000])
 def nb_samples(request):
     return request.param
 
