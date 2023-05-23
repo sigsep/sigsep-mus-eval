@@ -24,12 +24,8 @@ def nb_samples_diff(request):
     return request.param
 
 
-def test_pad_or_truncate(
-    nb_sources, nb_channels, nb_samples, nb_samples_diff
-):
-    references = np.random.random(
-        (nb_sources, nb_samples, nb_channels)
-    )
+def test_pad_or_truncate(nb_sources, nb_channels, nb_samples, nb_samples_diff):
+    references = np.random.random((nb_sources, nb_samples, nb_channels))
     estimates = np.random.random(
         (nb_sources, nb_samples + nb_samples_diff, nb_channels)
     )

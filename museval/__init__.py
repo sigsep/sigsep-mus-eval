@@ -7,40 +7,24 @@ import functools
 import musdb
 import warnings
 import pandas as pd
-from . aggregate import TrackStore, MethodStore, EvalStore, json2df
+from .aggregate import TrackStore, MethodStore, EvalStore, json2df
 from . import metrics
 
 
-def _load_track_estimates(track, estimates_dir, output_dir, ext='wav'):
+def _load_track_estimates(track, estimates_dir, output_dir, ext="wav"):
     """load estimates from disk instead of processing"""
     user_results = {}
-    track_estimate_dir = os.path.join(
-        estimates_dir,
-        track.subset,
-        track.name
-    )
-    for target in glob.glob(
-        track_estimate_dir + '/*.' + ext
-    ):
-
-        target_name = op.splitext(
-            os.path.basename(target)
-        )[0]
+    track_estimate_dir = os.path.join(estimates_dir, track.subset, track.name)
+    for target in glob.glob(track_estimate_dir + "/*." + ext):
+        target_name = op.splitext(os.path.basename(target))[0]
         try:
-            target_audio, _ = sf.read(
-                target,
-                always_2d=True
-            )
+            target_audio, _ = sf.read(target, always_2d=True)
             user_results[target_name] = target_audio
         except RuntimeError:
             pass
 
     if user_results:
-        eval_mus_track(
-            track,
-            user_results,
-            output_dir=output_dir
-        )
+        eval_mus_track(track, user_results, output_dir=output_dir)
 
     return None
 
@@ -49,7 +33,7 @@ def eval_dir(
     reference_dir,
     estimates_dir,
     output_dir=None,
-    mode='v4',
+    mode="v4",
     win=1.0,
     hop=1.0,
 ):
@@ -79,68 +63,51 @@ def eval_dir(
     reference = []
     estimates = []
 
-    data = TrackStore(
-        win=win, hop=hop,
-        track_name=os.path.basename(reference_dir)
-    )
+    data = TrackStore(win=win, hop=hop, track_name=os.path.basename(reference_dir))
 
     global_rate = None
-    reference_glob = os.path.join(reference_dir, '*.wav')
+    reference_glob = os.path.join(reference_dir, "*.wav")
     # Load in each reference file in the supplied dir
     for reference_file in glob.glob(reference_glob):
-        ref_audio, rate = sf.read(
-            reference_file,
-            always_2d=True
-        )
+        ref_audio, rate = sf.read(reference_file, always_2d=True)
         # Make sure fs is the same for all files
-        assert (global_rate is None or rate == global_rate)
+        assert global_rate is None or rate == global_rate
         global_rate = rate
         reference.append(ref_audio)
 
     if not reference:
-        raise ValueError('`reference_dir` contains no wav files')
+        raise ValueError("`reference_dir` contains no wav files")
 
-    estimated_glob = os.path.join(estimates_dir, '*.wav')
+    estimated_glob = os.path.join(estimates_dir, "*.wav")
     targets = []
     for estimated_file in glob.glob(estimated_glob):
         targets.append(os.path.basename(estimated_file))
-        ref_audio, rate = sf.read(
-            estimated_file,
-            always_2d=True
-        )
-        assert (global_rate is None or rate == global_rate)
+        ref_audio, rate = sf.read(estimated_file, always_2d=True)
+        assert global_rate is None or rate == global_rate
         global_rate = rate
         estimates.append(ref_audio)
 
     SDR, ISR, SIR, SAR = evaluate(
         reference,
         estimates,
-        win=int(win*global_rate),
-        hop=int(hop*global_rate),
-        mode=mode
+        win=int(win * global_rate),
+        hop=int(hop * global_rate),
+        mode=mode,
     )
     for i, target in enumerate(targets):
         values = {
             "SDR": SDR[i].tolist(),
             "SIR": SIR[i].tolist(),
             "ISR": ISR[i].tolist(),
-            "SAR": SAR[i].tolist()
+            "SAR": SAR[i].tolist(),
         }
 
-        data.add_target(
-            target_name=target,
-            values=values
-        )
+        data.add_target(target_name=target, values=values)
 
     return data
 
 
-def eval_mus_dir(
-    dataset,
-    estimates_dir,
-    output_dir=None,
-    ext='wav'
-):
+def eval_mus_dir(dataset, estimates_dir, output_dir=None, ext="wav"):
     """Run evaluation of musdb estimate dir
 
     Parameters
@@ -163,19 +130,11 @@ def eval_mus_dir(
         if track.name not in tracks_to_be_estimated:
             continue
         _load_track_estimates(
-            track=track,
-            estimates_dir=estimates_dir,
-            output_dir=output_dir
+            track=track, estimates_dir=estimates_dir, output_dir=output_dir
         )
 
-def eval_mus_track(
-    track,
-    user_estimates,
-    output_dir=None,
-    mode='v4',
-    win=1.0,
-    hop=1.0
-):
+
+def eval_mus_track(track, user_estimates, output_dir=None, mode="v4", win=1.0, hop=1.0):
     """Compute all bss_eval metrics for the musdb track and estimated signals,
     given by a `user_estimates` dict.
 
@@ -219,11 +178,11 @@ def eval_mus_track(
     data = TrackStore(win=win, hop=hop, track_name=track.name)
 
     # check if vocals and accompaniment is among the targets
-    has_acc = all(x in eval_targets for x in ['vocals', 'accompaniment'])
+    has_acc = all(x in eval_targets for x in ["vocals", "accompaniment"])
     if has_acc:
         # remove accompaniment from list of targets, because
         # the voc/acc scenario will be evaluated separately
-        eval_targets.remove('accompaniment')
+        eval_targets.remove("accompaniment")
 
     if len(eval_targets) >= 2:
         # compute evaluation of remaining targets
@@ -234,27 +193,24 @@ def eval_mus_track(
         SDR, ISR, SIR, SAR = evaluate(
             audio_reference,
             audio_estimates,
-            win=int(win*track.rate),
-            hop=int(hop*track.rate),
-            mode=mode
+            win=int(win * track.rate),
+            hop=int(hop * track.rate),
+            mode=mode,
         )
 
         # iterate over all evaluation results except for vocals
         for i, target in enumerate(eval_targets):
-            if target == 'vocals' and has_acc:
+            if target == "vocals" and has_acc:
                 continue
 
             values = {
                 "SDR": SDR[i].tolist(),
                 "SIR": SIR[i].tolist(),
                 "ISR": ISR[i].tolist(),
-                "SAR": SAR[i].tolist()
+                "SAR": SAR[i].tolist(),
             }
 
-            data.add_target(
-                target_name=target,
-                values=values
-            )
+            data.add_target(target_name=target, values=values)
     elif not has_acc:
         warnings.warn(
             UserWarning(
@@ -265,7 +221,7 @@ def eval_mus_track(
     # add vocal accompaniment targets later
     if has_acc:
         # add vocals and accompaniments as a separate scenario
-        eval_targets = ['vocals', 'accompaniment']
+        eval_targets = ["vocals", "accompaniment"]
 
         audio_estimates = []
         audio_reference = []
@@ -277,9 +233,9 @@ def eval_mus_track(
         SDR, ISR, SIR, SAR = evaluate(
             audio_reference,
             audio_estimates,
-            win=int(win*track.rate),
-            hop=int(hop*track.rate),
-            mode=mode
+            win=int(win * track.rate),
+            hop=int(hop * track.rate),
+            mode=mode,
         )
 
         # iterate over all targets
@@ -288,42 +244,31 @@ def eval_mus_track(
                 "SDR": SDR[i].tolist(),
                 "SIR": SIR[i].tolist(),
                 "ISR": ISR[i].tolist(),
-                "SAR": SAR[i].tolist()
+                "SAR": SAR[i].tolist(),
             }
 
-            data.add_target(
-                target_name=target,
-                values=values
-            )
+            data.add_target(target_name=target, values=values)
 
     if output_dir:
         # validate against the schema
         data.validate()
 
         try:
-            subset_path = op.join(
-                output_dir,
-                track.subset
-            )
+            subset_path = op.join(output_dir, track.subset)
 
             if not op.exists(subset_path):
                 os.makedirs(subset_path)
 
-            with open(
-                op.join(subset_path, track.name) + '.json', 'w+'
-            ) as f:
+            with open(op.join(subset_path, track.name) + ".json", "w+") as f:
                 f.write(data.json)
 
-        except (IOError):
+        except IOError:
             pass
 
     return data
 
 
-def pad_or_truncate(
-    audio_reference,
-    audio_estimates
-):
+def pad_or_truncate(audio_reference, audio_estimates):
     """Pad or truncate estimates by duration of references:
     - If reference > estimates: add zeros at the and of the estimated signal
     - If estimates > references: truncate estimates to duration of references
@@ -345,29 +290,20 @@ def pad_or_truncate(
     ref_shape = audio_reference.shape
     if est_shape[1] != ref_shape[1]:
         if est_shape[1] >= ref_shape[1]:
-            audio_estimates = audio_estimates[:, :ref_shape[1], :]
+            audio_estimates = audio_estimates[:, : ref_shape[1], :]
         else:
             # pad end with zeros
             audio_estimates = np.pad(
                 audio_estimates,
-                [
-                    (0, 0),
-                    (0, ref_shape[1] - est_shape[1]),
-                    (0, 0)
-                ],
-                mode='constant'
+                [(0, 0), (0, ref_shape[1] - est_shape[1]), (0, 0)],
+                mode="constant",
             )
 
     return audio_reference, audio_estimates
 
 
 def evaluate(
-    references,
-    estimates,
-    win=1*44100,
-    hop=1*44100,
-    mode='v4',
-    padding=True
+    references, estimates, win=1 * 44100, hop=1 * 44100, mode="v4", padding=True
 ):
     """BSS_EVAL images evaluation using metrics module
 
@@ -408,7 +344,7 @@ def evaluate(
         window=win,
         hop=hop,
         framewise_filters=(mode == "v3"),
-        bsseval_sources_version=False
+        bsseval_sources_version=False,
     )
 
     return SDR, ISR, SIR, SAR
