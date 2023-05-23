@@ -110,7 +110,7 @@ class TrackStore(object):
             pandas dataframe object of track scores
         """
         # encode and decode to json first
-        return json2df(simplejson.loads(self.json), self.track_name)
+        return json2df(simplejson.loads(self.json, allow_nan=True), self.track_name)
 
     def __repr__(self):
         """Print the frames_aggregated values instead of all frames
@@ -180,9 +180,9 @@ class EvalStore(object):
             track store object
         """
         if isinstance(track, TrackStore):
-            self.df = self.df.append(track.df, ignore_index=True)
+            self.df = pd.concat([self.df, track.df], ignore_index=True)
         else:
-            self.df = self.df.append(track, ignore_index=True)
+            self.df = pd.concat([self.df, track], ignore_index=True)
 
     def add_eval_dir(self, path):
         """add precomputed json folder to dataframe
@@ -197,7 +197,7 @@ class EvalStore(object):
             json_paths = p.glob('test/**/*.json')
             for json_path in json_paths:
                 with open(json_path) as json_file:
-                    json_string = simplejson.loads(json_file.read())
+                    json_string = simplejson.loads(json_file.read(), allow_nan=True)
                 track_df = json2df(json_string, json_path.stem)
                 self.add_track(track_df)
 
@@ -299,7 +299,7 @@ class MethodStore(object):
         raw_data = urlopen('https://github.com/sigsep/sigsep-mus-2018-analysis/releases/download/v1.0.0/sisec18_mus.pandas')
         print('Done!')
         df_sisec = pd.read_pickle(raw_data, compression=None)
-        self.df = self.df.append(df_sisec, ignore_index=True)
+        self.df = pd.concat([self.df, df_sisec], ignore_index=True)
 
     def add_eval_dir(self, path):
         """add precomputed json folder to dataframe.
@@ -317,7 +317,7 @@ class MethodStore(object):
             json_paths = p.glob('test/**/*.json')
             for json_path in json_paths:
                 with open(json_path) as json_file:
-                    json_string = simplejson.loads(json_file.read())
+                    json_string = simplejson.loads(json_file.read(), allow_nan=True)
                 track_df = json2df(json_string, json_path.stem)
                 method.add_track(track_df)
         self.add_evalstore(method, p.stem)
@@ -336,7 +336,7 @@ class MethodStore(object):
         """
         df_to_add = method.df
         df_to_add['method'] = name
-        self.df = self.df.append(df_to_add, ignore_index=True)
+        self.df = pd.concat([self.df, df_to_add], ignore_index=True)
     
     def agg_frames_scores(self):
         """aggregates frames scores

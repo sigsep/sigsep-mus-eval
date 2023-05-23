@@ -47,7 +47,7 @@ if __name__ == "__main__":
             'pandas>=1.0.1',
             'numpy',
             'scipy',
-            'simplejson',
+            'simplejson>=3.19.0',
             'soundfile',
             'jsonschema'
         ],
