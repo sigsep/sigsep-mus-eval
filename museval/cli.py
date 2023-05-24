@@ -78,7 +78,7 @@ def museval(inargs=None):
     # evaluate an existing estimate folder with wav files
     eval_mus_dir(
         dataset=mus,  # instance of musdb
-        estimates_dir=args.estimates_dir,  # path to estiamte folder
+        estimates_dir=args.estimates_dir,  # path to estimate folder
         output_dir=output_dir,  # set a folder to write eval json files
     )
 
