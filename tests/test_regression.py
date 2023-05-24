@@ -8,7 +8,11 @@ import numpy as np
 
 @pytest.fixture()
 def mus():
-    return musdb.DB(download=True)
+    musdb_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "data/MUSDB18-7-SAMPLE",
+    )
+    return musdb.DB(root=musdb_path)
 
 
 @pytest.fixture(params=["Music Delta - 80s Rock"])
