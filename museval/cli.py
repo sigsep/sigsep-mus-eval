@@ -11,34 +11,22 @@ def bsseval(inargs=None):
     """
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("reference_dir", type=str)
+
+    parser.add_argument("estimates_dir", type=str)
+
+    parser.add_argument("-o", help="output_dir")
+
+    parser.add_argument("--win", type=float, help="Window size in seconds", default=1.0)
+
+    parser.add_argument("--hop", type=float, help="Hop size in seconds", default=1.0)
+
     parser.add_argument(
-        'reference_dir',
-        type=str
+        "-m", type=str, help="bss_eval version [`v3`, `v4`]", default="v4"
     )
 
     parser.add_argument(
-        'estimates_dir',
-        type=str
-    )
-
-    parser.add_argument('-o', help='output_dir')
-
-    parser.add_argument(
-        '--win', type=float, help='Window size in seconds', default=1.0
-    )
-
-    parser.add_argument(
-        '--hop', type=float, help='Hop size in seconds', default=1.0
-    )
-
-    parser.add_argument(
-        '-m', type=str, help='bss_eval version [`v3`, `v4`]', default='v4'
-    )
-
-    parser.add_argument(
-        '--version', '-v',
-        action='version',
-        version='%%(prog)s %s' % _version
+        "--version", "-v", action="version", version="%%(prog)s %s" % _version
     )
 
     args = parser.parse_args(inargs)
@@ -55,7 +43,7 @@ def bsseval(inargs=None):
         output_dir=output_dir,
         mode=args.m,
         win=args.win,
-        hop=args.hop
+        hop=args.hop,
     )
 
     print(data)
@@ -67,22 +55,16 @@ def museval(inargs=None):
     """
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        'estimates_dir',
-        type=str
-    )
+    parser.add_argument("estimates_dir", type=str)
 
-    parser.add_argument('-o', help='output_dir')
+    parser.add_argument("-o", help="output_dir")
 
-    parser.add_argument(
-        '--musdb',
-        help='path to musdb',
-        type=str
-    )
+    parser.add_argument("--musdb", help="path to musdb", type=str)
 
     parser.add_argument(
-        '--is-wav', help='Read musdb wav instead of stems',
-        action='store_true',
+        "--is-wav",
+        help="Read musdb wav instead of stems",
+        action="store_true",
     )
 
     args = parser.parse_args(inargs)
@@ -101,5 +83,5 @@ def museval(inargs=None):
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     museval(sys.argv[1:])
