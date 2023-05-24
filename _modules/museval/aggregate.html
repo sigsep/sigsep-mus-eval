@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>museval.aggregate &mdash; museval  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            museval
+          </a>
+              <div class="version">
+                0.4.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">museval</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../museval.html">museval</a></li>
+      <li class="breadcrumb-item active">museval.aggregate</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for museval.aggregate</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">simplejson</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">from</span> <span class="nn">urllib.request</span> <span class="kn">import</span> <span class="n">urlopen</span>
+<span class="kn">from</span> <span class="nn">jsonschema</span> <span class="kn">import</span> <span class="n">validate</span>
+<span class="kn">import</span> <span class="nn">museval</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">.version</span> <span class="kn">import</span> <span class="n">_version</span>
+<span class="kn">from</span> <span class="nn">decimal</span> <span class="kn">import</span> <span class="n">Decimal</span> <span class="k">as</span> <span class="n">D</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="TrackStore"><a class="viewcode-back" href="../../index.html#museval.aggregate.TrackStore">[docs]</a><span class="k">class</span> <span class="nc">TrackStore</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds the metric scores for several frames of one track.</span>
+
+<span class="sd">    This is the fundamental building block of other succeeding scores such as `MethodStore` and `EvalStore`. Where as the latter use pandas dataframes, this store is using a simple dict that can easily exported to json using the builtin tools</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    track_name : str</span>
+<span class="sd">        name of track.</span>
+<span class="sd">    win : float, optional</span>
+<span class="sd">        evaluation window duration in seconds, default to 1 second</span>
+<span class="sd">    hop : float, optional</span>
+<span class="sd">        hop length in seconds, defaults to 1 second</span>
+<span class="sd">    scores : Dict</span>
+<span class="sd">        Nested Dictionary of all scores</span>
+<span class="sd">    frames_agg : callable or str</span>
+<span class="sd">        aggregation function for frames, defaults to `&#39;median&#39; == `np.nanmedian`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">track_name</span><span class="p">,</span> <span class="n">win</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hop</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">frames_agg</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">TrackStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">win</span> <span class="o">=</span> <span class="n">win</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hop</span> <span class="o">=</span> <span class="n">hop</span>
+        <span class="k">if</span> <span class="n">frames_agg</span> <span class="o">==</span> <span class="s2">&quot;median&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span>
+        <span class="k">elif</span> <span class="n">frames_agg</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">=</span> <span class="n">frames_agg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">track_name</span> <span class="o">=</span> <span class="n">track_name</span>
+        <span class="n">schema_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">museval</span><span class="o">.</span><span class="n">__path__</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;musdb.schema.json&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">schema_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_file</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">json_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;targets&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;museval_version&quot;</span><span class="p">:</span> <span class="n">_version</span><span class="p">}</span>
+
+<div class="viewcode-block" id="TrackStore.add_target"><a class="viewcode-back" href="../../index.html#museval.aggregate.TrackStore.add_target">[docs]</a>    <span class="k">def</span> <span class="nf">add_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_name</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;add scores of target to the data store</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_name : str</span>
+<span class="sd">            name of target to be added to list of targets</span>
+<span class="sd">        values : List(Dict)</span>
+<span class="sd">            List of framewise data entries, see `musdb.schema.json`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">target_name</span><span class="p">,</span> <span class="s2">&quot;frames&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s2">&quot;SDR&quot;</span><span class="p">]):</span>
+            <span class="n">frame_data</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hop</span><span class="p">,</span>
+                <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">win</span><span class="p">,</span>
+                <span class="s2">&quot;metrics&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;SDR&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_q</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s2">&quot;SDR&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                    <span class="s2">&quot;SIR&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_q</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s2">&quot;SIR&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                    <span class="s2">&quot;SAR&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_q</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s2">&quot;SAR&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                    <span class="s2">&quot;ISR&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_q</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="s2">&quot;ISR&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+            <span class="n">target_data</span><span class="p">[</span><span class="s2">&quot;frames&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame_data</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="s2">&quot;targets&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target_data</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">json</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;formats the track scores as json string</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ----------</span>
+<span class="sd">        json_string : str</span>
+<span class="sd">            json dump of the scores dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">json_string</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">allow_nan</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_decimal</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">json_string</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">df</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;return track scores as pandas dataframe</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ----------</span>
+<span class="sd">        df : DataFrame</span>
+<span class="sd">            pandas dataframe object of track scores</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># encode and decode to json first</span>
+        <span class="k">return</span> <span class="n">json2df</span><span class="p">(</span><span class="n">simplejson</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">json</span><span class="p">,</span> <span class="n">allow_nan</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">track_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print the frames_aggregated values instead of all frames</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ----------</span>
+<span class="sd">        str</span>
+<span class="sd">            frames_aggreagted values of all target metrics</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">[</span><span class="s2">&quot;targets&quot;</span><span class="p">]:</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;==&gt; &quot;</span>
+            <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;SDR&quot;</span><span class="p">,</span> <span class="s2">&quot;SIR&quot;</span><span class="p">,</span> <span class="s2">&quot;ISR&quot;</span><span class="p">,</span> <span class="s2">&quot;SAR&quot;</span><span class="p">]:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="p">(</span>
+                    <span class="n">metric</span>
+                    <span class="o">+</span> <span class="s2">&quot;:&quot;</span>
+                    <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{:&gt;8.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span><span class="p">(</span>
+                            <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;metrics&quot;</span><span class="p">][</span><span class="n">metric</span><span class="p">])</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;frames&quot;</span><span class="p">]]</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="o">+</span> <span class="s2">&quot;  &quot;</span>
+                <span class="p">)</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+<div class="viewcode-block" id="TrackStore.validate"><a class="viewcode-back" href="../../index.html#museval.aggregate.TrackStore.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate scores against `musdb.schema`&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scores</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_q</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="s2">&quot;.00001&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;quantiztion of BSSEval values&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">number</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">D</span><span class="p">(</span><span class="n">D</span><span class="p">(</span><span class="n">number</span><span class="p">)</span><span class="o">.</span><span class="n">quantize</span><span class="p">(</span><span class="n">D</span><span class="p">(</span><span class="n">precision</span><span class="p">)))</span>
+
+<div class="viewcode-block" id="TrackStore.save"><a class="viewcode-back" href="../../index.html#museval.aggregate.TrackStore.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Saved the track scores as json format&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">json</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="EvalStore"><a class="viewcode-back" href="../../index.html#museval.aggregate.EvalStore">[docs]</a><span class="k">class</span> <span class="nc">EvalStore</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluation Storage that holds the scores for multiple tracks.</span>
+
+<span class="sd">    This is based on a Pandas DataFrame.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : DataFrame</span>
+<span class="sd">        Pandas DataFrame</span>
+<span class="sd">    frames_agg : str</span>
+<span class="sd">        aggregation function for frames supports `mean` and `median`, defaults to `median`</span>
+<span class="sd">    tracks_agg : str</span>
+<span class="sd">        aggregation function for frames supports `mean` and `median`, defaults to `&#39;median&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frames_agg</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">,</span> <span class="n">tracks_agg</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">EvalStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">=</span> <span class="n">frames_agg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tracks_agg</span> <span class="o">=</span> <span class="n">tracks_agg</span>
+
+<div class="viewcode-block" id="EvalStore.add_track"><a class="viewcode-back" href="../../index.html#museval.aggregate.EvalStore.add_track">[docs]</a>    <span class="k">def</span> <span class="nf">add_track</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">track</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;add track score object to dataframe</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        track : TrackStore or DataFrame</span>
+<span class="sd">            track store object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">track</span><span class="p">,</span> <span class="n">TrackStore</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="n">track</span><span class="o">.</span><span class="n">df</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="n">track</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EvalStore.add_eval_dir"><a class="viewcode-back" href="../../index.html#museval.aggregate.EvalStore.add_eval_dir">[docs]</a>    <span class="k">def</span> <span class="nf">add_eval_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;add precomputed json folder to dataframe</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">            path to evaluation results</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">json_paths</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;test/**/*.json&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">json_path</span> <span class="ow">in</span> <span class="n">json_paths</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_file</span><span class="p">:</span>
+                    <span class="n">json_string</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_file</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">allow_nan</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">track_df</span> <span class="o">=</span> <span class="n">json2df</span><span class="p">(</span><span class="n">json_string</span><span class="p">,</span> <span class="n">json_path</span><span class="o">.</span><span class="n">stem</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_track</span><span class="p">(</span><span class="n">track_df</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EvalStore.agg_frames_scores"><a class="viewcode-back" href="../../index.html#museval.aggregate.EvalStore.agg_frames_scores">[docs]</a>    <span class="k">def</span> <span class="nf">agg_frames_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;aggregates frames scores</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df_aggregated_frames : GroupBy</span>
+<span class="sd">             data frame with frames aggregated by mean or median</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df_aggregated_frames_gb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;track&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="s2">&quot;metric&quot;</span><span class="p">])[</span>
+            <span class="s2">&quot;score&quot;</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">==</span> <span class="s2">&quot;median&quot;</span><span class="p">:</span>
+            <span class="n">df_aggregated_frames</span> <span class="o">=</span> <span class="n">df_aggregated_frames_gb</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
+            <span class="n">df_aggregated_frames</span> <span class="o">=</span> <span class="n">df_aggregated_frames_gb</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">df_aggregated_frames</span></div>
+
+<div class="viewcode-block" id="EvalStore.agg_frames_tracks_scores"><a class="viewcode-back" href="../../index.html#museval.aggregate.EvalStore.agg_frames_tracks_scores">[docs]</a>    <span class="k">def</span> <span class="nf">agg_frames_tracks_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;aggregates frames and track scores</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df_aggregated_frames : GroupBy</span>
+<span class="sd">             data frame with frames and tracks aggregated by mean or median</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">df_aggregated_frames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agg_frames_scores</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracks_agg</span> <span class="o">==</span> <span class="s2">&quot;median&quot;</span><span class="p">:</span>
+            <span class="n">df_aggregated_tracks</span> <span class="o">=</span> <span class="n">df_aggregated_frames</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="s2">&quot;metric&quot;</span><span class="p">])[</span>
+                <span class="s2">&quot;score&quot;</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracks_agg</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
+            <span class="n">df_aggregated_tracks</span> <span class="o">=</span> <span class="n">df_aggregated_frames</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="s2">&quot;metric&quot;</span><span class="p">])[</span>
+                <span class="s2">&quot;score&quot;</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">df_aggregated_tracks</span></div>
+
+<div class="viewcode-block" id="EvalStore.load"><a class="viewcode-back" href="../../index.html#museval.aggregate.EvalStore.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;loads pickled dataframe</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EvalStore.save"><a class="viewcode-back" href="../../index.html#museval.aggregate.EvalStore.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;saves pickled dataframe</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;Aggrated Scores (</span><span class="si">{}</span><span class="s2"> over frames, </span><span class="si">{}</span><span class="s2"> over tracks)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracks_agg</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="n">target</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">16</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;==&gt; &quot;</span>
+            <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;SDR&quot;</span><span class="p">,</span> <span class="s2">&quot;SIR&quot;</span><span class="p">,</span> <span class="s2">&quot;ISR&quot;</span><span class="p">,</span> <span class="s2">&quot;SAR&quot;</span><span class="p">]:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="p">(</span>
+                    <span class="n">metric</span>
+                    <span class="o">+</span> <span class="s2">&quot;:&quot;</span>
+                    <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{:&gt;8.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">agg_frames_tracks_scores</span><span class="p">()</span><span class="o">.</span><span class="n">unstack</span><span class="p">()[</span><span class="n">metric</span><span class="p">][</span><span class="n">target</span><span class="p">]</span>
+                    <span class="p">)</span>
+                    <span class="o">+</span> <span class="s2">&quot;  &quot;</span>
+                <span class="p">)</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="MethodStore"><a class="viewcode-back" href="../../index.html#museval.aggregate.MethodStore">[docs]</a><span class="k">class</span> <span class="nc">MethodStore</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds a pandas DataFrame that stores data for several methods.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : DataFrame</span>
+<span class="sd">        Pandas DataFrame</span>
+<span class="sd">    frames_agg : str</span>
+<span class="sd">        aggregation function for frames supports `mean` and `median`, defaults to `median`</span>
+<span class="sd">    tracks_agg : str</span>
+<span class="sd">        aggregation function for frames supports `mean` and `median`, defaults to `&#39;median&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frames_agg</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">,</span> <span class="n">tracks_agg</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MethodStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">=</span> <span class="n">frames_agg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tracks_agg</span> <span class="o">=</span> <span class="n">tracks_agg</span>
+
+<div class="viewcode-block" id="MethodStore.add_sisec18"><a class="viewcode-back" href="../../index.html#museval.aggregate.MethodStore.add_sisec18">[docs]</a>    <span class="k">def</span> <span class="nf">add_sisec18</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;adds sisec18 participants results to DataFrame.</span>
+
+<span class="sd">        Scores will be downloaded on demand.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Downloading SISEC18 Evaluation data...&quot;</span><span class="p">)</span>
+        <span class="n">raw_data</span> <span class="o">=</span> <span class="n">urlopen</span><span class="p">(</span>
+            <span class="s2">&quot;https://github.com/sigsep/sigsep-mus-2018-analysis/releases/download/v1.0.0/sisec18_mus.pandas&quot;</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done!&quot;</span><span class="p">)</span>
+        <span class="n">df_sisec</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">raw_data</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="n">df_sisec</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MethodStore.add_eval_dir"><a class="viewcode-back" href="../../index.html#museval.aggregate.MethodStore.add_eval_dir">[docs]</a>    <span class="k">def</span> <span class="nf">add_eval_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;add precomputed json folder to dataframe.</span>
+
+<span class="sd">        The method name will be defined by the basename of provided path</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">            path to evaluation results</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">EvalStore</span><span class="p">()</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">json_paths</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;test/**/*.json&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">json_path</span> <span class="ow">in</span> <span class="n">json_paths</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_file</span><span class="p">:</span>
+                    <span class="n">json_string</span> <span class="o">=</span> <span class="n">simplejson</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_file</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">allow_nan</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">track_df</span> <span class="o">=</span> <span class="n">json2df</span><span class="p">(</span><span class="n">json_string</span><span class="p">,</span> <span class="n">json_path</span><span class="o">.</span><span class="n">stem</span><span class="p">)</span>
+                <span class="n">method</span><span class="o">.</span><span class="n">add_track</span><span class="p">(</span><span class="n">track_df</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_evalstore</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stem</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MethodStore.add_evalstore"><a class="viewcode-back" href="../../index.html#museval.aggregate.MethodStore.add_evalstore">[docs]</a>    <span class="k">def</span> <span class="nf">add_evalstore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;add DataFrame</span>
+
+<span class="sd">        The method name will be defined by the basename of provided path</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        method : EvalStore</span>
+<span class="sd">            EvalStore object</span>
+<span class="sd">        name : str</span>
+<span class="sd">            name of method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df_to_add</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">df</span>
+        <span class="n">df_to_add</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="n">df_to_add</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MethodStore.agg_frames_scores"><a class="viewcode-back" href="../../index.html#museval.aggregate.MethodStore.agg_frames_scores">[docs]</a>    <span class="k">def</span> <span class="nf">agg_frames_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;aggregates frames scores</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df_aggregated_frames : GroupBy</span>
+<span class="sd">             data frame with frames and tracks aggregated by mean or median</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df_aggregated_frames_gb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
+            <span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;track&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="s2">&quot;metric&quot;</span><span class="p">]</span>
+        <span class="p">)[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">==</span> <span class="s2">&quot;median&quot;</span><span class="p">:</span>
+            <span class="n">df_aggregated_frames</span> <span class="o">=</span> <span class="n">df_aggregated_frames_gb</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">frames_agg</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
+            <span class="n">df_aggregated_frames</span> <span class="o">=</span> <span class="n">df_aggregated_frames_gb</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">df_aggregated_frames</span></div>
+
+<div class="viewcode-block" id="MethodStore.agg_frames_tracks_scores"><a class="viewcode-back" href="../../index.html#museval.aggregate.MethodStore.agg_frames_tracks_scores">[docs]</a>    <span class="k">def</span> <span class="nf">agg_frames_tracks_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;aggregates frames and track scores</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df_aggregated_frames : GroupBy</span>
+<span class="sd">             data frame with frames and tracks aggregated by mean or median</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df_aggregated_frames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agg_frames_scores</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracks_agg</span> <span class="o">==</span> <span class="s2">&quot;median&quot;</span><span class="p">:</span>
+            <span class="n">df_aggregated_tracks</span> <span class="o">=</span> <span class="n">df_aggregated_frames</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="s2">&quot;metric&quot;</span><span class="p">]</span>
+            <span class="p">)[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracks_agg</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
+            <span class="n">df_aggregated_tracks</span> <span class="o">=</span> <span class="n">df_aggregated_frames</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="s2">&quot;metric&quot;</span><span class="p">]</span>
+            <span class="p">)[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">df_aggregated_tracks</span></div>
+
+<div class="viewcode-block" id="MethodStore.load"><a class="viewcode-back" href="../../index.html#museval.aggregate.MethodStore.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;loads pickled dataframe</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MethodStore.save"><a class="viewcode-back" href="../../index.html#museval.aggregate.MethodStore.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;saves pickled dataframe</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="json2df"><a class="viewcode-back" href="../../index.html#museval.aggregate.json2df">[docs]</a><span class="k">def</span> <span class="nf">json2df</span><span class="p">(</span><span class="n">json_string</span><span class="p">,</span> <span class="n">track_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;converts json scores into pandas dataframe</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    json_string : str</span>
+<span class="sd">    track_name : str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">json_normalize</span><span class="p">(</span><span class="n">json_string</span><span class="p">[</span><span class="s2">&quot;targets&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;frames&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+
+    <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;metrics.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span>
+        <span class="n">df</span><span class="p">,</span>
+        <span class="n">var_name</span><span class="o">=</span><span class="s2">&quot;metric&quot;</span><span class="p">,</span>
+        <span class="n">value_name</span><span class="o">=</span><span class="s2">&quot;score&quot;</span><span class="p">,</span>
+        <span class="n">id_vars</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">],</span>
+        <span class="n">value_vars</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;SDR&quot;</span><span class="p">,</span> <span class="s2">&quot;SAR&quot;</span><span class="p">,</span> <span class="s2">&quot;ISR&quot;</span><span class="p">,</span> <span class="s2">&quot;SIR&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;track&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">track_name</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;target&quot;</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Inria (Fabian-Robert Stöter, Antoine Liutkus).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

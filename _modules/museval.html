@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>museval &mdash; museval  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            museval
+          </a>
+              <div class="version">
+                0.4.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">museval</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">museval</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for museval</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">soundfile</span> <span class="k">as</span> <span class="nn">sf</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">musdb</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">.aggregate</span> <span class="kn">import</span> <span class="n">TrackStore</span><span class="p">,</span> <span class="n">MethodStore</span><span class="p">,</span> <span class="n">EvalStore</span><span class="p">,</span> <span class="n">json2df</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">metrics</span>
+
+
+<span class="k">def</span> <span class="nf">_load_track_estimates</span><span class="p">(</span><span class="n">track</span><span class="p">,</span> <span class="n">estimates_dir</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="s2">&quot;wav&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;load estimates from disk instead of processing&quot;&quot;&quot;</span>
+    <span class="n">user_results</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">track_estimate_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">estimates_dir</span><span class="p">,</span> <span class="n">track</span><span class="o">.</span><span class="n">subset</span><span class="p">,</span> <span class="n">track</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">track_estimate_dir</span> <span class="o">+</span> <span class="s2">&quot;/*.&quot;</span> <span class="o">+</span> <span class="n">ext</span><span class="p">):</span>
+        <span class="n">target_name</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">target</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">target_audio</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">always_2d</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">user_results</span><span class="p">[</span><span class="n">target_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_audio</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">if</span> <span class="n">user_results</span><span class="p">:</span>
+        <span class="n">eval_mus_track</span><span class="p">(</span><span class="n">track</span><span class="p">,</span> <span class="n">user_results</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="eval_dir"><a class="viewcode-back" href="../index.html#museval.eval_dir">[docs]</a><span class="k">def</span> <span class="nf">eval_dir</span><span class="p">(</span>
+    <span class="n">reference_dir</span><span class="p">,</span>
+    <span class="n">estimates_dir</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;v4&quot;</span><span class="p">,</span>
+    <span class="n">win</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">hop</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute bss_eval metrics for two given directories assuming file</span>
+<span class="sd">    names are identical for both, reference source and estimates.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    reference_dir : str</span>
+<span class="sd">        path to reference sources directory.</span>
+<span class="sd">    estimates_dir : str</span>
+<span class="sd">        path to estimates directory.</span>
+<span class="sd">    output_dir : str</span>
+<span class="sd">        path to output directory used to save evaluation results. Defaults to</span>
+<span class="sd">        `None`, meaning no evaluation files will be saved.</span>
+<span class="sd">    mode : str</span>
+<span class="sd">        bsseval version number. Defaults to &#39;v4&#39;.</span>
+<span class="sd">    win : int</span>
+<span class="sd">        window size in</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    scores : TrackStore</span>
+<span class="sd">        scores object that holds the framewise and global evaluation scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">reference</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">estimates</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">TrackStore</span><span class="p">(</span><span class="n">win</span><span class="o">=</span><span class="n">win</span><span class="p">,</span> <span class="n">hop</span><span class="o">=</span><span class="n">hop</span><span class="p">,</span> <span class="n">track_name</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">reference_dir</span><span class="p">))</span>
+
+    <span class="n">global_rate</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">reference_glob</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">reference_dir</span><span class="p">,</span> <span class="s2">&quot;*.wav&quot;</span><span class="p">)</span>
+    <span class="c1"># Load in each reference file in the supplied dir</span>
+    <span class="k">for</span> <span class="n">reference_file</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">reference_glob</span><span class="p">):</span>
+        <span class="n">ref_audio</span><span class="p">,</span> <span class="n">rate</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">reference_file</span><span class="p">,</span> <span class="n">always_2d</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Make sure fs is the same for all files</span>
+        <span class="k">assert</span> <span class="n">global_rate</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rate</span> <span class="o">==</span> <span class="n">global_rate</span>
+        <span class="n">global_rate</span> <span class="o">=</span> <span class="n">rate</span>
+        <span class="n">reference</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ref_audio</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">reference</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`reference_dir` contains no wav files&quot;</span><span class="p">)</span>
+
+    <span class="n">estimated_glob</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">estimates_dir</span><span class="p">,</span> <span class="s2">&quot;*.wav&quot;</span><span class="p">)</span>
+    <span class="n">targets</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">estimated_file</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">estimated_glob</span><span class="p">):</span>
+        <span class="n">targets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">estimated_file</span><span class="p">))</span>
+        <span class="n">ref_audio</span><span class="p">,</span> <span class="n">rate</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">estimated_file</span><span class="p">,</span> <span class="n">always_2d</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">global_rate</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rate</span> <span class="o">==</span> <span class="n">global_rate</span>
+        <span class="n">global_rate</span> <span class="o">=</span> <span class="n">rate</span>
+        <span class="n">estimates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ref_audio</span><span class="p">)</span>
+
+    <span class="n">SDR</span><span class="p">,</span> <span class="n">ISR</span><span class="p">,</span> <span class="n">SIR</span><span class="p">,</span> <span class="n">SAR</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span>
+        <span class="n">reference</span><span class="p">,</span>
+        <span class="n">estimates</span><span class="p">,</span>
+        <span class="n">win</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">win</span> <span class="o">*</span> <span class="n">global_rate</span><span class="p">),</span>
+        <span class="n">hop</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">hop</span> <span class="o">*</span> <span class="n">global_rate</span><span class="p">),</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">targets</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;SDR&quot;</span><span class="p">:</span> <span class="n">SDR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="s2">&quot;SIR&quot;</span><span class="p">:</span> <span class="n">SIR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="s2">&quot;ISR&quot;</span><span class="p">:</span> <span class="n">ISR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="s2">&quot;SAR&quot;</span><span class="p">:</span> <span class="n">SAR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+        <span class="p">}</span>
+
+        <span class="n">data</span><span class="o">.</span><span class="n">add_target</span><span class="p">(</span><span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="eval_mus_dir"><a class="viewcode-back" href="../index.html#museval.eval_mus_dir">[docs]</a><span class="k">def</span> <span class="nf">eval_mus_dir</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">estimates_dir</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="s2">&quot;wav&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run evaluation of musdb estimate dir</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : DB(object)</span>
+<span class="sd">        MUSDB18 Database object.</span>
+<span class="sd">    estimates_dir : str</span>
+<span class="sd">        Path to estimates folder.</span>
+<span class="sd">    output_dir : str</span>
+<span class="sd">        Output folder where evaluation json files are stored.</span>
+<span class="sd">    ext : str</span>
+<span class="sd">        estimate file extension, defaults to `wav`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># create a new musdb instance for estimates with the same file structure</span>
+    <span class="n">est</span> <span class="o">=</span> <span class="n">musdb</span><span class="o">.</span><span class="n">DB</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">estimates_dir</span><span class="p">,</span> <span class="n">is_wav</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># get a list of track names</span>
+    <span class="n">tracks_to_be_estimated</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">est</span><span class="o">.</span><span class="n">tracks</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">track</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">track</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tracks_to_be_estimated</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">_load_track_estimates</span><span class="p">(</span>
+            <span class="n">track</span><span class="o">=</span><span class="n">track</span><span class="p">,</span> <span class="n">estimates_dir</span><span class="o">=</span><span class="n">estimates_dir</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="n">output_dir</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="eval_mus_track"><a class="viewcode-back" href="../index.html#museval.eval_mus_track">[docs]</a><span class="k">def</span> <span class="nf">eval_mus_track</span><span class="p">(</span><span class="n">track</span><span class="p">,</span> <span class="n">user_estimates</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;v4&quot;</span><span class="p">,</span> <span class="n">win</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">hop</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute all bss_eval metrics for the musdb track and estimated signals,</span>
+<span class="sd">    given by a `user_estimates` dict.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    track : Track</span>
+<span class="sd">        musdb track object loaded using musdb</span>
+<span class="sd">    estimated_sources : Dict</span>
+<span class="sd">        dictionary, containing the user estimates as np.arrays.</span>
+<span class="sd">    output_dir : str</span>
+<span class="sd">        path to output directory used to save evaluation results. Defaults to</span>
+<span class="sd">        `None`, meaning no evaluation files will be saved.</span>
+<span class="sd">    mode : str</span>
+<span class="sd">        bsseval version number. Defaults to &#39;v4&#39;.</span>
+<span class="sd">    win : int</span>
+<span class="sd">        window size in</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    scores : TrackStore</span>
+<span class="sd">        scores object that holds the framewise and global evaluation scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">audio_estimates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">audio_reference</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># make sure to always build the list in the same order</span>
+    <span class="c1"># therefore track.targets is an OrderedDict</span>
+    <span class="n">eval_targets</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># save the list of target names to be evaluated</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">track</span><span class="o">.</span><span class="n">targets</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># try to fetch the audio from the user_results of a given key</span>
+            <span class="n">user_estimates</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c1"># ignore wrong key and continue</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># append this target name to the list of target to evaluate</span>
+        <span class="n">eval_targets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">TrackStore</span><span class="p">(</span><span class="n">win</span><span class="o">=</span><span class="n">win</span><span class="p">,</span> <span class="n">hop</span><span class="o">=</span><span class="n">hop</span><span class="p">,</span> <span class="n">track_name</span><span class="o">=</span><span class="n">track</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="c1"># check if vocals and accompaniment is among the targets</span>
+    <span class="n">has_acc</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">x</span> <span class="ow">in</span> <span class="n">eval_targets</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;vocals&quot;</span><span class="p">,</span> <span class="s2">&quot;accompaniment&quot;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">has_acc</span><span class="p">:</span>
+        <span class="c1"># remove accompaniment from list of targets, because</span>
+        <span class="c1"># the voc/acc scenario will be evaluated separately</span>
+        <span class="n">eval_targets</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;accompaniment&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">eval_targets</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># compute evaluation of remaining targets</span>
+        <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">eval_targets</span><span class="p">:</span>
+            <span class="n">audio_estimates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">user_estimates</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+            <span class="n">audio_reference</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">track</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">audio</span><span class="p">)</span>
+
+        <span class="n">SDR</span><span class="p">,</span> <span class="n">ISR</span><span class="p">,</span> <span class="n">SIR</span><span class="p">,</span> <span class="n">SAR</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span>
+            <span class="n">audio_reference</span><span class="p">,</span>
+            <span class="n">audio_estimates</span><span class="p">,</span>
+            <span class="n">win</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">win</span> <span class="o">*</span> <span class="n">track</span><span class="o">.</span><span class="n">rate</span><span class="p">),</span>
+            <span class="n">hop</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">hop</span> <span class="o">*</span> <span class="n">track</span><span class="o">.</span><span class="n">rate</span><span class="p">),</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># iterate over all evaluation results except for vocals</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eval_targets</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">target</span> <span class="o">==</span> <span class="s2">&quot;vocals&quot;</span> <span class="ow">and</span> <span class="n">has_acc</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">values</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;SDR&quot;</span><span class="p">:</span> <span class="n">SDR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="s2">&quot;SIR&quot;</span><span class="p">:</span> <span class="n">SIR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="s2">&quot;ISR&quot;</span><span class="p">:</span> <span class="n">ISR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="s2">&quot;SAR&quot;</span><span class="p">:</span> <span class="n">SAR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="p">}</span>
+
+            <span class="n">data</span><span class="o">.</span><span class="n">add_target</span><span class="p">(</span><span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">has_acc</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="ne">UserWarning</span><span class="p">(</span>
+                <span class="s2">&quot;Incorrect usage of BSSeval : at least two estimates must be provided. Target score will be empty.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># add vocal accompaniment targets later</span>
+    <span class="k">if</span> <span class="n">has_acc</span><span class="p">:</span>
+        <span class="c1"># add vocals and accompaniments as a separate scenario</span>
+        <span class="n">eval_targets</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;vocals&quot;</span><span class="p">,</span> <span class="s2">&quot;accompaniment&quot;</span><span class="p">]</span>
+
+        <span class="n">audio_estimates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">audio_reference</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">eval_targets</span><span class="p">:</span>
+            <span class="n">audio_estimates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">user_estimates</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+            <span class="n">audio_reference</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">track</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="n">target</span><span class="p">]</span><span class="o">.</span><span class="n">audio</span><span class="p">)</span>
+
+        <span class="n">SDR</span><span class="p">,</span> <span class="n">ISR</span><span class="p">,</span> <span class="n">SIR</span><span class="p">,</span> <span class="n">SAR</span> <span class="o">=</span> <span class="n">evaluate</span><span class="p">(</span>
+            <span class="n">audio_reference</span><span class="p">,</span>
+            <span class="n">audio_estimates</span><span class="p">,</span>
+            <span class="n">win</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">win</span> <span class="o">*</span> <span class="n">track</span><span class="o">.</span><span class="n">rate</span><span class="p">),</span>
+            <span class="n">hop</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">hop</span> <span class="o">*</span> <span class="n">track</span><span class="o">.</span><span class="n">rate</span><span class="p">),</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># iterate over all targets</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eval_targets</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;SDR&quot;</span><span class="p">:</span> <span class="n">SDR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="s2">&quot;SIR&quot;</span><span class="p">:</span> <span class="n">SIR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="s2">&quot;ISR&quot;</span><span class="p">:</span> <span class="n">ISR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="s2">&quot;SAR&quot;</span><span class="p">:</span> <span class="n">SAR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="p">}</span>
+
+            <span class="n">data</span><span class="o">.</span><span class="n">add_target</span><span class="p">(</span><span class="n">target_name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">output_dir</span><span class="p">:</span>
+        <span class="c1"># validate against the schema</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">subset_path</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">track</span><span class="o">.</span><span class="n">subset</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">op</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">subset_path</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">subset_path</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subset_path</span><span class="p">,</span> <span class="n">track</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.json&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">json</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="pad_or_truncate"><a class="viewcode-back" href="../index.html#museval.pad_or_truncate">[docs]</a><span class="k">def</span> <span class="nf">pad_or_truncate</span><span class="p">(</span><span class="n">audio_reference</span><span class="p">,</span> <span class="n">audio_estimates</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pad or truncate estimates by duration of references:</span>
+<span class="sd">    - If reference &gt; estimates: add zeros at the and of the estimated signal</span>
+<span class="sd">    - If estimates &gt; references: truncate estimates to duration of references</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    references : np.ndarray, shape=(nsrc, nsampl, nchan)</span>
+<span class="sd">        array containing true reference sources</span>
+<span class="sd">    estimates : np.ndarray, shape=(nsrc, nsampl, nchan)</span>
+<span class="sd">        array containing estimated sources</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    references : np.ndarray, shape=(nsrc, nsampl, nchan)</span>
+<span class="sd">        array containing true reference sources</span>
+<span class="sd">    estimates : np.ndarray, shape=(nsrc, nsampl, nchan)</span>
+<span class="sd">        array containing estimated sources</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">est_shape</span> <span class="o">=</span> <span class="n">audio_estimates</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">ref_shape</span> <span class="o">=</span> <span class="n">audio_reference</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="n">est_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ref_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">est_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">ref_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">audio_estimates</span> <span class="o">=</span> <span class="n">audio_estimates</span><span class="p">[:,</span> <span class="p">:</span> <span class="n">ref_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># pad end with zeros</span>
+            <span class="n">audio_estimates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span>
+                <span class="n">audio_estimates</span><span class="p">,</span>
+                <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ref_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">est_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span>
+                <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;constant&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">audio_reference</span><span class="p">,</span> <span class="n">audio_estimates</span></div>
+
+
+<div class="viewcode-block" id="evaluate"><a class="viewcode-back" href="../index.html#museval.evaluate">[docs]</a><span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span>
+    <span class="n">references</span><span class="p">,</span> <span class="n">estimates</span><span class="p">,</span> <span class="n">win</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="mi">44100</span><span class="p">,</span> <span class="n">hop</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="mi">44100</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;v4&quot;</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;BSS_EVAL images evaluation using metrics module</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    references : np.ndarray, shape=(nsrc, nsampl, nchan)</span>
+<span class="sd">        array containing true reference sources</span>
+<span class="sd">    estimates : np.ndarray, shape=(nsrc, nsampl, nchan)</span>
+<span class="sd">        array containing estimated sources</span>
+<span class="sd">    window : int, defaults to 44100</span>
+<span class="sd">        window size in samples</span>
+<span class="sd">    hop : int</span>
+<span class="sd">        hop size in samples, defaults to 44100 (no overlap)</span>
+<span class="sd">    mode : str</span>
+<span class="sd">        BSSEval version, default to `v4`</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    SDR : np.ndarray, shape=(nsrc,)</span>
+<span class="sd">        vector of Signal to Distortion Ratios (SDR)</span>
+<span class="sd">    ISR : np.ndarray, shape=(nsrc,)</span>
+<span class="sd">        vector of Source to Spatial Distortion Image (ISR)</span>
+<span class="sd">    SIR : np.ndarray, shape=(nsrc,)</span>
+<span class="sd">        vector of Source to Interference Ratios (SIR)</span>
+<span class="sd">    SAR : np.ndarray, shape=(nsrc,)</span>
+<span class="sd">        vector of Sources to Artifacts Ratios (SAR)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">estimates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">estimates</span><span class="p">)</span>
+    <span class="n">references</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">references</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">padding</span><span class="p">:</span>
+        <span class="n">references</span><span class="p">,</span> <span class="n">estimates</span> <span class="o">=</span> <span class="n">pad_or_truncate</span><span class="p">(</span><span class="n">references</span><span class="p">,</span> <span class="n">estimates</span><span class="p">)</span>
+
+    <span class="n">SDR</span><span class="p">,</span> <span class="n">ISR</span><span class="p">,</span> <span class="n">SIR</span><span class="p">,</span> <span class="n">SAR</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">bss_eval</span><span class="p">(</span>
+        <span class="n">references</span><span class="p">,</span>
+        <span class="n">estimates</span><span class="p">,</span>
+        <span class="n">compute_permutation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">window</span><span class="o">=</span><span class="n">win</span><span class="p">,</span>
+        <span class="n">hop</span><span class="o">=</span><span class="n">hop</span><span class="p">,</span>
+        <span class="n">framewise_filters</span><span class="o">=</span><span class="p">(</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;v3&quot;</span><span class="p">),</span>
+        <span class="n">bsseval_sources_version</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">SDR</span><span class="p">,</span> <span class="n">ISR</span><span class="p">,</span> <span class="n">SIR</span><span class="p">,</span> <span class="n">SAR</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Inria (Fabian-Robert Stöter, Antoine Liutkus).</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
