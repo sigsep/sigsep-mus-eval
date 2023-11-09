@@ -675,11 +675,13 @@ def _bss_crit(s_true, e_spat, e_interf, e_artif, bsseval_sources_version):
 
 
 def _safe_db(num, den):
-    """Properly handle the potential +Inf db SIR instead of raising a
+    """Properly handle the potential +Inf, -Inf, and NaN db SIR instead of raising a
     RuntimeWarning.
     """
+    if den == 0 and num == 0:
+        return np.float64(np.NaN)
     if den == 0:
-        return np.inf
+        return np.float64(np.inf)
     if num == 0:
-        return - np.inf
+        return np.float64(- np.inf)
     return 10 * np.log10(num / den)
