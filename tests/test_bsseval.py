@@ -77,7 +77,7 @@ def test_empty_input(is_framewise, is_sources, nb_win, nb_hop):
 def test_silent_input(references, estimates, is_framewise, is_sources, nb_win, nb_hop):
     estimates = np.zeros(references.shape)
 
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning):
         metrics.bss_eval(
             references,
             estimates,
