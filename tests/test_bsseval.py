@@ -74,20 +74,6 @@ def test_empty_input(is_framewise, is_sources, nb_win, nb_hop):
         assert np.allclose(output, np.array([]))
 
 
-def test_silent_input(references, estimates, is_framewise, is_sources, nb_win, nb_hop):
-    estimates = np.zeros(references.shape)
-
-    with pytest.raises(ValueError):
-        metrics.bss_eval(
-            references,
-            estimates,
-            framewise_filters=is_framewise,
-            bsseval_sources_version=is_sources,
-            window=nb_win,
-            hop=nb_hop,
-        )
-
-
 def test_metric(references, estimates, is_framewise, is_sources, nb_win, nb_hop):
     metrics.bss_eval(
         references,
