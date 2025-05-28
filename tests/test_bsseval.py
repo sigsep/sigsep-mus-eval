@@ -74,9 +74,7 @@ def test_empty_input(is_framewise, is_sources, nb_win, nb_hop):
         assert np.allclose(output, np.array([]))
 
 
-def test_silent_input(
-    references, estimates, is_framewise, is_sources, nb_win, nb_hop
-):
+def test_silent_input(references, estimates, is_framewise, is_sources, nb_win, nb_hop):
     estimates = np.zeros(references.shape)
 
     with pytest.raises(ValueError):
@@ -86,33 +84,31 @@ def test_silent_input(
             framewise_filters=is_framewise,
             bsseval_sources_version=is_sources,
             window=nb_win,
-            hop=nb_hop
+            hop=nb_hop,
         )
 
 
-def test_metric(
-    references, estimates, is_framewise, is_sources, nb_win, nb_hop
-):
+def test_metric(references, estimates, is_framewise, is_sources, nb_win, nb_hop):
     metrics.bss_eval(
-        references, estimates,
+        references,
+        estimates,
         framewise_filters=is_framewise,
         bsseval_sources_version=is_sources,
         window=nb_win,
-        hop=nb_hop
+        hop=nb_hop,
     )
 
 
-def test_wrappers(
-    references, estimates, is_framewise, is_sources, nb_win, nb_hop
-):
+def test_wrappers(references, estimates, is_framewise, is_sources, nb_win, nb_hop):
     functions = [
         metrics.bss_eval_sources,
         metrics.bss_eval_images,
         metrics.bss_eval_sources_framewise,
-        metrics.bss_eval_images_framewise
+        metrics.bss_eval_images_framewise,
     ]
 
     for function in functions:
         function(
-            references, estimates,
+            references,
+            estimates,
         )
