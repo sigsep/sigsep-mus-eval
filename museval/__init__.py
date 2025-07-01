@@ -130,7 +130,7 @@ def eval_mus_dir(dataset, estimates_dir, output_dir=None, ext="wav"):
         if track.name not in tracks_to_be_estimated:
             continue
         _load_track_estimates(
-            track=track, estimates_dir=estimates_dir, output_dir=output_dir
+            track=track, estimates_dir=estimates_dir, output_dir=output_dir, ext=ext,
         )
 
 
