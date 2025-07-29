@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import museval.metrics as metrics
 import museval
 
 
