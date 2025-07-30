@@ -679,7 +679,7 @@ def _safe_db(num, den):
     RuntimeWarning.
     """
     if den == 0 and num == 0:
-        return np.float64(np.NaN)
+        return np.float64(np.nan)
     if den == 0:
         return np.float64(np.inf)
     if num == 0:
