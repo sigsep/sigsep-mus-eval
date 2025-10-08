@@ -22,6 +22,61 @@ You can install the `museval` parsing package using pip:
 pip install museval
 ```
 
+### GPU Acceleration (Optional)
+
+`museval` now supports optional GPU acceleration using NVIDIA CUDA. This can significantly speed up evaluation for large datasets or long audio files.
+
+#### Requirements
+- NVIDIA GPU with CUDA support
+- CUDA Toolkit installed (version 11.x or 12.x)
+
+#### Installation with GPU support
+
+```bash
+# For CUDA 11.x
+pip install museval[gpu]
+
+# For CUDA 12.x, install CuPy manually first:
+pip install cupy-cuda12x
+pip install museval
+```
+
+#### Usage with GPU
+
+GPU acceleration can be enabled in several ways:
+
+**1. Via function parameter:**
+```python
+import museval
+
+scores = museval.metrics.bss_eval(
+    reference_sources,
+    estimated_sources,
+    backend='cupy'  # Use GPU acceleration
+)
+```
+
+**2. Via environment variable:**
+```bash
+export MUSEVAL_BACKEND=cupy
+python your_evaluation_script.py
+```
+
+**3. Auto mode (default):**
+By default, `backend='auto'` will use NumPy (CPU). Set the environment variable to enable GPU globally.
+
+#### Performance Considerations
+
+GPU acceleration is most beneficial for:
+- Large number of sources (4+)
+- Long audio files (> 30 seconds)
+- Batch processing multiple tracks
+- Framewise evaluation with many windows
+
+For smaller inputs, CPU may be faster due to data transfer overhead.
+
+If GPU is not available or CuPy is not installed, `museval` will automatically fall back to CPU computation with a warning.
+
 ## Usage
 
 The purpose of this package is to evaluate source separation results and write out validated `json` files. We want to encourage users to use this evaluation output format as the standardized way to share source separation results. `museval` is designed to work in conjuction with the [musdb](https://github.com/sigsep/sigsep-mus-db) tools and the MUSDB18 dataset (however, `museval` can also be used without `musdb`).
