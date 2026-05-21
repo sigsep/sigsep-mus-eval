@@ -1,5 +1,7 @@
 # museval
 
+In memoriam to [Emmanuel Vincent](https://team.inria.fr/multispeech/in-memoriam-emmanuel-vincent/).
+
 [![Build Status](https://github.com/sigsep/sigsep-mus-eval/workflows/CI/badge.svg)](https://github.com/sigsep/sigsep-mus-eval/actions?query=workflow%3ACI+branch%3Amaster+event%3Apush)
 [![Latest Version](https://img.shields.io/pypi/v/museval.svg)](https://pypi.python.org/pypi/museval)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/museval.svg)](https://pypi.python.org/pypi/museval)
