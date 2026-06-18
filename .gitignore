@@ -89,3 +89,4 @@ data/*
 !data/fetch.sh
 !data/decode.sh
 Estimates/
+*.json
