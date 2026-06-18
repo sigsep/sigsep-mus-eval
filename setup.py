@@ -65,6 +65,9 @@ if __name__ == "__main__":
                 'recommonmark',
                 'numpydoc'
             ],
+            'gpu': [
+                'cupy-cuda12x>=10.0.0',
+            ],
         },
 
         tests_require=[
