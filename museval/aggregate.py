@@ -253,6 +253,9 @@ class EvalStore(object):
         self.df.to_pickle(path)
 
     def __repr__(self):
+        # Check if df is not empty
+        assert not self.df.empty, "DataFrame is empty. Please add tracks first."
+
         targets = self.df["target"].unique()
         out = "Aggrated Scores ({} over frames, {} over tracks)\n".format(
             self.frames_agg, self.tracks_agg
